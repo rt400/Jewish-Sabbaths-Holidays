@@ -3,7 +3,7 @@
 The `Jewish-Sabbaths-Holidays` platform uses to Receive Shabbat and holiday entry times, as well as a Hebrew date and Jewish holiday names.
 This is base on Hebcal website.
 
-*Note: If a holiday eve falls on a Saturday night then a holiday sensor will not work but a Shabbat sensor will be extended until Sunday evening (a holiday night that falls on a Sunday)*
+***Note: If a holiday eve falls on a Saturday night then a holiday sensor will not work but a Shabbat sensor will be extended until Sunday evening (a holiday night that falls on a Sunday)***
 
 ## Installation
 
@@ -11,7 +11,9 @@ First download all files in folder https://github.com/rt400/Jewish-Sabbaths-Holi
 Now you need to create folder "hebcal" in your HomeAssistant config/custom_components folder and copy all files that you already download.
 
 The sensor need latitude and longitude and timezone so he got it from HomeAssitant config ,
-   so you need to besure that you put them in configuration.yaml . also need the TimeZone 
+   so you need to besure that you put them in configuration.yaml . 
+   
+   also need the TimeZone 
    see link : https://www.home-assistant.io/blog/2015/05/09/utc-time-zone-awareness/
    Example :
    ```python
