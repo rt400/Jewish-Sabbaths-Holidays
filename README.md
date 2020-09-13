@@ -37,13 +37,13 @@ sensor:
 
 If you want to control the time off Havdala and time before entrace :
 
-havdalah_calc =   By defaule he get 42 Min , you can set 50Min or 72Min for other methods
+**havdalah_calc** :   By defaule he get 42 Min , you can set 50Min or 72Min for other methods
   
-time_before_check: By defaule he get 10 Min , you can set minutes so the sensor can check if is shabbat
+**time_before_check** :  By defaule he get 10 Min , you can set minutes so the sensor can check if is shabbat
   
-time_after_check: By defaule he get 10 Min , you can set minutes so the sensor can check if shabbat is ends..
+**time_after_check** : By defaule he get 10 Min , you can set minutes so the sensor can check if shabbat is ends..
 
-resources: if not set you will get all.
+**resources:**  (if not set you will get all.)
 ```
     - shabbat_in : get shabbat entrace
     - shabbat_out : get shabbat exit
