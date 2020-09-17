@@ -3,7 +3,6 @@
 The `Jewish-Sabbaths-Holidays` platform uses to Receive Shabbat and holiday entry times, as well as a Hebrew date and Jewish holiday names.
 This is base on Hebcal website.
 
-***Note: If a holiday eve falls on a Saturday night then a holiday sensor will not work but a Shabbat sensor will be extended until Sunday evening (a holiday night that falls on a Sunday)***
 
 ## Installation
 
