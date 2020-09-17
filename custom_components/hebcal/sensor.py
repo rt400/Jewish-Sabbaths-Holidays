@@ -73,7 +73,7 @@ async def async_setup_platform(
                 sensor_type.title(), '', 'mdi:flash']
         entities.append(Hebcal(hass, sensor_type, hass.config.time_zone, latitude, longitude,
                                havdalah, time_before, time_after))
-                   
+
     async_add_entities(entities, False)
 
 
@@ -151,7 +151,8 @@ class Hebcal(Entity):
 
     async def create_db_file(self):
         """Create the json db."""
-        self.set_days()
+        #self.set_days()
+        self.friday = datetime.date.today()
         self.hebcal_db = []
         self.parashat = None
         self.holiday_name = None
@@ -212,9 +213,9 @@ class Hebcal(Entity):
                     self.hebcal_db.append(extract_data)
                 if "havdalah" in list(extract_data.values()):
                     is_out = datetime.datetime.strptime(extract_data['date'], '%Y-%m-%dT%H:%M:%S')
-                    if is_out.isoweekday() >= 6:
+                    if is_out.isoweekday() == 6:
                         self.shabbat_out = is_out
-                    elif is_out.isoweekday() < 5:
+                    elif is_out.isoweekday() < 5 or is_out.isoweekday() > 6:
                         self.holiday_out = is_out
                     self.hebcal_db.append(extract_data)
                 if "parashat" in list(extract_data.values()):
@@ -230,6 +231,14 @@ class Hebcal(Entity):
                 self.shabbat_in = self.shabbat_out - datetime.timedelta(days=1) - datetime.timedelta(minutes=65)
                 self.hebcal_db.append({'className': 'candles', 'hebrew': 'הדלקת נרות', 'start': str(self.shabbat_in)
                                       .replace(" ", "T"), 'allDay': False, 'title': 'הדלקת נרות'})
+            if self.holiday_in and not self.holiday_out:
+                self.holiday_out = self.holiday_in + datetime.timedelta(days=1) + datetime.timedelta(minutes=65)
+                self.hebcal_db.append({'hebrew': 'הבדלה - 42 דקות', 'start': str(self.holiday_out).replace(" ", "T"),
+                                       'className': 'havdalah', 'allDay': False, 'title': 'הבדלה - 42 דקות'})
+            elif not self.holiday_in and self.holiday_out:
+                self.holiday_in = self.holiday_out - datetime.timedelta(days=1) - datetime.timedelta(minutes=65)
+                self.hebcal_db.append({'className': 'candles', 'hebrew': 'הדלקת נרות', 'start': str(self.holiday_in)
+                                      .replace(" ", "T"), 'allDay': False, 'title': 'הדלקת נרות'})
         elif state == "update":
             for extract_data in temp_db:
                 if "date" in extract_data:
@@ -242,9 +251,9 @@ class Hebcal(Entity):
                         self.holiday_in = is_in
                 if "havdalah" in list(extract_data.values()):
                     is_out = datetime.datetime.strptime(extract_data['date'], '%Y-%m-%dT%H:%M:%S')
-                    if is_out.isoweekday() >= 6:
+                    if is_out.isoweekday() == 6:
                         self.shabbat_out = is_out
-                    elif is_out.isoweekday() < 5:
+                    elif is_out.isoweekday() < 5 or is_out.isoweekday() > 6:
                         self.holiday_out = is_out
                 if "parashat" in list(extract_data.values()):
                     self.parashat = extract_data['hebrew']
