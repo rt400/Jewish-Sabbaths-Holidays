@@ -225,19 +225,19 @@ class Hebcal(Entity):
                     self.hebcal_db.append(extract_data)
             if self.shabbat_in and not self.shabbat_out:
                 self.shabbat_out = self.shabbat_in + datetime.timedelta(days=1) + datetime.timedelta(minutes=65)
-                self.hebcal_db.append({'hebrew': 'הבדלה - 42 דקות', 'start': str(self.shabbat_out).replace(" ", "T"),
+                self.hebcal_db.append({'hebrew': 'הבדלה - 42 דקות', 'date': str(self.shabbat_out).replace(" ", "T"),
                                        'className': 'havdalah', 'allDay': False, 'title': 'הבדלה - 42 דקות'})
             elif not self.shabbat_in and self.shabbat_out:
                 self.shabbat_in = self.shabbat_out - datetime.timedelta(days=1) - datetime.timedelta(minutes=65)
-                self.hebcal_db.append({'className': 'candles', 'hebrew': 'הדלקת נרות', 'start': str(self.shabbat_in)
+                self.hebcal_db.append({'className': 'candles', 'hebrew': 'הדלקת נרות', 'date': str(self.shabbat_in)
                                       .replace(" ", "T"), 'allDay': False, 'title': 'הדלקת נרות'})
             if self.holiday_in and not self.holiday_out:
                 self.holiday_out = self.holiday_in + datetime.timedelta(days=1) + datetime.timedelta(minutes=65)
-                self.hebcal_db.append({'hebrew': 'הבדלה - 42 דקות', 'start': str(self.holiday_out).replace(" ", "T"),
+                self.hebcal_db.append({'hebrew': 'הבדלה - 42 דקות', 'date': str(self.holiday_out).replace(" ", "T"),
                                        'className': 'havdalah', 'allDay': False, 'title': 'הבדלה - 42 דקות'})
             elif not self.holiday_in and self.holiday_out:
                 self.holiday_in = self.holiday_out - datetime.timedelta(days=1) - datetime.timedelta(minutes=65)
-                self.hebcal_db.append({'className': 'candles', 'hebrew': 'הדלקת נרות', 'start': str(self.holiday_in)
+                self.hebcal_db.append({'className': 'candles', 'hebrew': 'הדלקת נרות', 'date': str(self.holiday_in)
                                       .replace(" ", "T"), 'allDay': False, 'title': 'הדלקת נרות'})
         elif state == "update":
             for extract_data in temp_db:
