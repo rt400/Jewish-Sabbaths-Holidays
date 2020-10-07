@@ -16,6 +16,10 @@ from homeassistant.helpers.entity import Entity, async_generate_entity_id
 
 from .const import (
     HAVDALAH_MINUTES,
+    HEBCAL_CONVERTER_URL,
+    HEBCAL_DATE_URL,
+    HEBCAL_SHABBAT_URL,
+    PLATFORM_FOLDER,
     SENSOR_PREFIX,
     SENSOR_TYPES,
     TIME_AFTER_CHECK,
@@ -101,7 +105,7 @@ class Hebcal(Entity):
         self._havdalah = havdalah
         self._time_before = time_before
         self._time_after = time_after
-        self.config_path = hass.config.path() + "/custom_components/hebcal/"
+        self.config_path = hass.config.path() + PLATFORM_FOLDER
         self._state = None
         self.parashat = None
         self.holiday_name = None
@@ -160,7 +164,7 @@ class Hebcal(Entity):
             async with aiohttp.ClientSession() as session:
                 html = await fetch(
                     session,
-                    "https://www.hebcal.com/shabbat?cfg=json&gy="
+                    HEBCAL_SHABBAT_URL
                     + str(self.friday.year)
                     + "&gm="
                     + str(self.friday.month)
@@ -184,8 +188,7 @@ class Hebcal(Entity):
             async with aiohttp.ClientSession() as session:
                 html = await fetch(
                     session,
-                    "https://www.hebcal.com/hebcal/?v=1&cfg=json&year=now"
-                    "&month="
+                    HEBCAL_DATE_URL
                     + str(self.friday.month)
                     + "&maj=on&min=on&nx=on&mf=on&ss=on&mod=on&s=off&c=off&o=on&i=on&geo=pos"
                     "&latitude="
@@ -206,7 +209,7 @@ class Hebcal(Entity):
             async with aiohttp.ClientSession() as session:
                 html = await fetch(
                     session,
-                    "https://www.hebcal.com/converter/?cfg=json&gy="
+                    HEBCAL_CONVERTER_URL
                     + str(datetime.date.today().year)
                     + "&gm="
                     + str(datetime.date.today().month)

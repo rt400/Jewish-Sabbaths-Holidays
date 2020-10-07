@@ -4,6 +4,12 @@ import voluptuous as vol
 from homeassistant.components.sensor import PLATFORM_SCHEMA
 from homeassistant.const import CONF_LATITUDE, CONF_LONGITUDE, CONF_RESOURCES
 
+PLATFORM_FOLDER = "/custom_components/hebcal/"
+
+HEBCAL_SHABBAT_URL = "https://www.hebcal.com/shabbat?cfg=json&gy="
+HEBCAL_DATE_URL = "https://www.hebcal.com/hebcal/?v=1&cfg=json&year=now&month="
+HEBCAL_CONVERTER_URL = "https://www.hebcal.com/converter/?cfg=json&gy="
+
 SENSOR_PREFIX = "Hebcal "
 HAVDALAH_MINUTES = "havdalah_calc"
 TIME_BEFORE_CHECK = "time_before_check"
