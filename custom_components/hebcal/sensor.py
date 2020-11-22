@@ -9,6 +9,7 @@ import pathlib
 import time
 
 import aiohttp
+import pytz
 from homeassistant.components.sensor import ENTITY_ID_FORMAT
 from homeassistant.const import CONF_LATITUDE, CONF_LONGITUDE, CONF_RESOURCES
 from homeassistant.core import callback
@@ -82,15 +83,15 @@ class Hebcal(Entity):
     config_path = None
 
     def __init__(
-        self,
-        hass,
-        sensor_type,
-        timezone,
-        latitude,
-        longitude,
-        havdalah,
-        time_before,
-        time_after,
+            self,
+            hass,
+            sensor_type,
+            timezone,
+            latitude,
+            longitude,
+            havdalah,
+            time_before,
+            time_after,
     ):
         """Initialize the sensor"""
         self.type = sensor_type
@@ -191,7 +192,7 @@ class Hebcal(Entity):
                     HEBCAL_DATE_URL
                     + str(self.friday.month)
                     + "&maj=on&min=on&nx=on&mf=on&ss=on&mod=on&s=off&c=off&o=on&i=on&geo=pos"
-                    "&latitude="
+                      "&latitude="
                     + str(self._latitude)
                     + "&longitude="
                     + str(self._longitude)
@@ -221,7 +222,7 @@ class Hebcal(Entity):
         except Exception as e:
             _LOGGER.error("Error in hebrew data: %s", str(e))
         with codecs.open(
-            self.config_path + "hebcal_data.json", "w", encoding="utf-8"
+                self.config_path + "hebcal_data.json", "w", encoding="utf-8"
         ) as outfile:
             json.dump(
                 self.hebcal_db,
@@ -264,14 +265,14 @@ class Hebcal(Entity):
                     self.parashat = extract_data["hebrew"]
                     self.hebcal_db.append(extract_data)
                 if any(
-                    x in ["holiday", "roshchodesh"] for x in list(extract_data.values())
+                        x in ["holiday", "roshchodesh"] for x in list(extract_data.values())
                 ):
                     self.hebcal_db.append(extract_data)
             if self.shabbat_in and not self.shabbat_out:
                 self.shabbat_out = (
-                    self.shabbat_in
-                    + datetime.timedelta(days=1)
-                    + datetime.timedelta(minutes=65)
+                        self.shabbat_in
+                        + datetime.timedelta(days=1)
+                        + datetime.timedelta(minutes=65)
                 )
                 self.hebcal_db.append(
                     {
@@ -284,9 +285,9 @@ class Hebcal(Entity):
                 )
             elif not self.shabbat_in and self.shabbat_out:
                 self.shabbat_in = (
-                    self.shabbat_out
-                    - datetime.timedelta(days=1)
-                    - datetime.timedelta(minutes=65)
+                        self.shabbat_out
+                        - datetime.timedelta(days=1)
+                        - datetime.timedelta(minutes=65)
                 )
                 self.hebcal_db.append(
                     {
@@ -299,9 +300,9 @@ class Hebcal(Entity):
                 )
             if self.holiday_in and not self.holiday_out:
                 self.holiday_out = (
-                    self.holiday_in
-                    + datetime.timedelta(days=1)
-                    + datetime.timedelta(minutes=65)
+                        self.holiday_in
+                        + datetime.timedelta(days=1)
+                        + datetime.timedelta(minutes=65)
                 )
                 self.hebcal_db.append(
                     {
@@ -314,9 +315,9 @@ class Hebcal(Entity):
                 )
             elif not self.holiday_in and self.holiday_out:
                 self.holiday_in = (
-                    self.holiday_out
-                    - datetime.timedelta(days=1)
-                    - datetime.timedelta(minutes=65)
+                        self.holiday_out
+                        - datetime.timedelta(days=1)
+                        - datetime.timedelta(minutes=65)
                 )
                 self.hebcal_db.append(
                     {
@@ -339,7 +340,7 @@ class Hebcal(Entity):
                     )
                     if is_in.isoweekday() == 5:
                         self.shabbat_in = is_in
-                    elif is_in.isoweekday() != 6 and is_in.isoweekday() != 5:
+                    elif is_in.isoweekday() != 5:
                         self.holiday_in = is_in
                 if "havdalah" in list(extract_data.values()):
                     is_out = datetime.datetime.strptime(
@@ -358,7 +359,7 @@ class Hebcal(Entity):
             await self.create_db_file()
         elif not self.hebcal_db or self.file_time_stamp is None:
             with open(
-                self.config_path + "hebcal_data.json", encoding="utf-8"
+                    self.config_path + "hebcal_data.json", encoding="utf-8"
             ) as data_file:
                 self.hebcal_db = json.loads(data_file.read())
                 await self.filter_db(self.hebcal_db, "update")
@@ -373,6 +374,10 @@ class Hebcal(Entity):
         """Set the Friday and Saturday"""
         weekday = self.set_friday(datetime.date.today().isoweekday())
         self.friday = datetime.date.today() + datetime.timedelta(days=weekday)
+
+    @classmethod
+    def utc_to_local(cls, utc_dt):
+        return utc_dt.replace(tzinfo=datetime.timezone.utc).astimezone(tz=pytz.timezone('Asia/Jerusalem'))
 
     @classmethod
     def set_friday(cls, day):
@@ -419,24 +424,26 @@ class Hebcal(Entity):
 
     async def is_shabbat(self) -> bool:
         """Check if it is Shabbat now"""
+        today = self.utc_to_local(datetime.datetime.utcnow()).replace(tzinfo=None)
         if self.shabbat_in is not None and self.shabbat_out is not None:
             is_in = self.shabbat_in - datetime.timedelta(minutes=int(self._time_before))
             is_out = self.shabbat_out + datetime.timedelta(
                 minutes=int(self._time_after)
             )
-            if is_in < datetime.datetime.today() < is_out:
+            if is_in < today < is_out:
                 return "True"
             return "False"
         return "False"
 
     async def is_holiday(self) -> bool:
         """Check if it is Holiday now"""
+        today = self.utc_to_local(datetime.datetime.utcnow()).replace(tzinfo=None)
         if self.holiday_in is not None and self.holiday_out is not None:
             is_in = self.holiday_in - datetime.timedelta(minutes=int(self._time_before))
             is_out = self.holiday_out + datetime.timedelta(
                 minutes=int(self._time_after)
             )
-            if is_in < datetime.datetime.today() < is_out:
+            if is_in < today < is_out:
                 return "True"
             return "False"
         return "False"
@@ -446,7 +453,7 @@ class Hebcal(Entity):
         result = self.heb_day_str()
         for extract_data in self.hebcal_db:
             if any(
-                x in ["holiday", "roshchodesh"] for x in list(extract_data.values())
+                    x in ["holiday", "roshchodesh"] for x in list(extract_data.values())
             ):
                 start = datetime.datetime.strptime(
                     extract_data["date"][:10], "%Y-%m-%d"
