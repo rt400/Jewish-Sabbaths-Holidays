@@ -49,6 +49,8 @@ If you want to control the time off Havdala and time before entrace :
 
 - **time_after_check**    # By defaule he get 10 Min , you can set minutes so the sensor can check if shabbat is ends..
 
+- **tzeit_hakochavim**    # By defaule set True , If set False the havdalah exit use calc
+
 - **resources:**          # Mandatory - You need to select atleast one
 
 ```yaml
@@ -74,6 +76,7 @@ sensor:
     havdalah_calc: 42
     time_before_check: 10
     time_after_check: 1
+    tzeit_hakochavim: False
     resources:
       - shabbat_in
       - shabbat_out
