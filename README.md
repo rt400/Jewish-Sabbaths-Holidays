@@ -1,3 +1,4 @@
+[![hacs_badge](https://img.shields.io/badge/HACS-Default-orange.svg?style=for-the-badge)](https://github.com/custom-components/hacs)
 # Jewish Sabbaths and Holidays Times integration for Home-Assistant
 
 The `Jewish-Sabbaths-Holidays` platform uses [HebCal API](https://www.hebcal.com/) to Receive Shabbat and holiday entry times, as well as the Hebrew date and Jewish holiday names.
