@@ -7,14 +7,13 @@ import json
 import logging
 import pathlib
 import time
-
 import aiohttp
 import pytz
 from homeassistant.components.sensor import ENTITY_ID_FORMAT
 from homeassistant.const import CONF_LATITUDE, CONF_LONGITUDE, CONF_RESOURCES
 from homeassistant.core import callback
 from homeassistant.helpers.entity import Entity, async_generate_entity_id
-
+from homeassistant.helpers.sun import get_astral_event_date
 from .const import (
     HAVDALAH_MINUTES,
     PLATFORM_FOLDER,
@@ -23,19 +22,23 @@ from .const import (
     TIME_AFTER_CHECK,
     TIME_BEFORE_CHECK,
     TZEIT_HAKOCHAVIM,
+    OMER_COUNT_TYPE,
     DEFAULT_HAVDALAH_MINUTES,
     DEFAULT_TIME_BEFORE_CHECK,
     DEFAULT_TIME_AFTER_CHECK,
     DEFAULT_TZEIT_HAKOCHAVIM,
+    DEFAULT_OMER_COUNT_TYPE,
+    OMER_DAYS,
     HEBREW_WEEKDAY,
-    FRIDAY_DAY,
-    HEBCAL_SHABBAT_URL,
-    HEBCAL_SHABBAT_URL_HAVDALAH,
+    # FRIDAY_DAY,
+    # HEBCAL_SHABBAT_URL,
+    # HEBCAL_SHABBAT_URL_HAVDALAH,
     HEBCAL_DATE_URL,
     HEBCAL_DATE_URL_HAVDALAH,
     HEBCAL_CONVERTER_URL)
 
 _LOGGER = logging.getLogger(__name__)
+version = "2.0.0"
 
 
 async def async_setup_platform(hass, config, async_add_entities, discovery_info=None):
@@ -46,6 +49,7 @@ async def async_setup_platform(hass, config, async_add_entities, discovery_info=
     time_before = config.get(TIME_BEFORE_CHECK)
     time_after = config.get(TIME_AFTER_CHECK)
     tzeit_hakochavim = config.get(TZEIT_HAKOCHAVIM)
+    omer_count_type = config.get(OMER_COUNT_TYPE)
 
     if None in (latitude, longitude):
         _LOGGER.error("Latitude or longitude not set in Home Assistant config")
@@ -68,6 +72,7 @@ async def async_setup_platform(hass, config, async_add_entities, discovery_info=
                 time_before,
                 time_after,
                 tzeit_hakochavim,
+                omer_count_type,
             )
         )
 
@@ -86,8 +91,8 @@ class Hebcal(Entity):
     temp_data = []
     shabbat_in = None
     shabbat_out = None
-    holiday_in = None
-    holiday_out = None
+    yomtov_in = None
+    yomtov_out = None
     file_time_stamp = None
     start = None
     end = None
@@ -104,6 +109,7 @@ class Hebcal(Entity):
             time_before,
             time_after,
             tzeit_hakochavim,
+            omer_count_type,
     ):
         """Initialize the sensor"""
         self.type = sensor_type
@@ -131,15 +137,19 @@ class Hebcal(Entity):
             self._tzeit_hakochavim = DEFAULT_TZEIT_HAKOCHAVIM
         else:
             self._tzeit_hakochavim = tzeit_hakochavim
+        if omer_count_type is None:
+            self._omer_count_type = DEFAULT_OMER_COUNT_TYPE
+        else:
+            self._omer_count_type = omer_count_type
         self.config_path = hass.config.path() + PLATFORM_FOLDER
         self._state = None
         self.parashat = None
-        self.holiday_name = None
+        self.yomtov_name = None
 
     @property
     def name(self) -> str:
         """Return the name of the sensor"""
-        return SENSOR_PREFIX + SENSOR_TYPES[self.type][2]
+        return SENSOR_TYPES[self.type][0]
 
     @property
     def icon(self):
@@ -164,10 +174,12 @@ class Hebcal(Entity):
             "shabbat_out": self.get_shabbat_time_out,
             "is_shabbat": self.is_shabbat,
             "parasha": self.get_parasha,
-            "holiday_in": self.get_holiday_time_in,
-            "holiday_out": self.get_holiday_time_out,
-            "is_holiday": self.is_holiday,
-            "holiday_name": self.get_holiday_name,
+            "yomtov_in": self.get_yomtov_time_in,
+            "yomtov_out": self.get_yomtov_time_out,
+            "is_yomtov": self.is_yomtov,
+            "yomtov_name": self.get_yomtov_name,
+            "event_name": self.get_event_name,
+            "omer_day": self.get_omer_day,
             "hebrew_date": self.get_hebrew_date,
         }
         self._state = await type_to_func[self.type]()
@@ -202,7 +214,7 @@ class Hebcal(Entity):
                     session, h_url, )
                 temp_db = json.loads(html)
                 with codecs.open(
-                    self.config_path + "hebcal_data_full.json", "w", encoding="utf-8"
+                        self.config_path + "hebcal_data_full.json", "w", encoding="utf-8"
                 ) as outfile:
                     json.dump(
                         temp_db,
@@ -222,7 +234,15 @@ class Hebcal(Entity):
                 self.temp_data.append(json.loads(html))
 
         except Exception as e:
-            _LOGGER.error("Error while create DB: %s", str(e))
+            _LOGGER.error("Error while create DB: %s. Restore From Backup", str(e))
+            with open(
+                    self.config_path + "hebcal_data.json", encoding="utf-8"
+            ) as data_file:
+                self.hebcal_db = json.loads(data_file.read())
+                await self.filter_db(self.hebcal_db, "update")
+            self.file_time_stamp = datetime.datetime.strptime(
+                self.hebcal_db[0]["update_date"], "%Y-%m-%d"
+            ).date()
         if len(self.temp_data) > 2:
             self.hebcal_db = self.temp_data
             with codecs.open(
@@ -255,7 +275,7 @@ class Hebcal(Entity):
                         self.shabbat_in = is_in
                         self.temp_data.append(extract_data)
                     elif is_in.isoweekday() != 6 and is_in.isoweekday() != 5:
-                        self.holiday_in = is_in
+                        self.yomtov_in = is_in
                         self.temp_data.append(extract_data)
                 if "havdalah" in list(extract_data.values()):
                     is_out = datetime.datetime.strptime(
@@ -265,14 +285,18 @@ class Hebcal(Entity):
                         self.shabbat_out = is_out
                         self.temp_data.append(extract_data)
                     elif is_out.isoweekday() < 5 or is_out.isoweekday() > 6:
-                        self.holiday_out = is_out
+                        self.yomtov_out = is_out
                         self.temp_data.append(extract_data)
                 if "parashat" in list(extract_data.values()):
                     self.parashat = extract_data["hebrew"]
                     self.temp_data.append(extract_data)
                 if any(
-                        x in ["holiday", "roshchodesh"] for x in list(extract_data.values())
+                        x in ["yomtov", "holiday", "omer", "roshchodesh"] for x in list(extract_data.values())
                 ):
+                    extract_data["start"] = str(self.sunset_time(extract_data["date"], -1)).replace(" ", "T") \
+                        .replace("+03:00", "").replace("+02:00", "")
+                    extract_data["end"] = str(self.sunset_time(extract_data["date"], 0)).replace(" ", "T") \
+                        .replace("+03:00", "").replace("+02:00", "")
                     self.temp_data.append(extract_data)
             if self.shabbat_in and not self.shabbat_out:
                 self.shabbat_out = (
@@ -304,24 +328,24 @@ class Hebcal(Entity):
                         "title": "הדלקת נרות - ידני",
                     }
                 )
-            if self.holiday_in and not self.holiday_out:
-                self.holiday_out = (
-                        self.holiday_in
+            if self.yomtov_in and not self.yomtov_out:
+                self.yomtov_out = (
+                        self.yomtov_in
                         + datetime.timedelta(days=1)
                         + datetime.timedelta(minutes=60)
                 )
                 self.temp_data.append(
                     {
                         "hebrew": "הבדלה - 42 דקות",
-                        "date": str(self.holiday_out).replace(" ", "T"),
+                        "date": str(self.yomtov_out).replace(" ", "T"),
                         "className": "havdalah",
                         "allDay": False,
                         "title": "הבדלה - ידני",
                     }
                 )
-            elif not self.holiday_in and self.holiday_out:
-                self.holiday_in = (
-                        self.holiday_out
+            elif not self.yomtov_in and self.yomtov_out:
+                self.yomtov_in = (
+                        self.yomtov_out
                         - datetime.timedelta(days=1)
                         - datetime.timedelta(minutes=60)
                 )
@@ -329,7 +353,7 @@ class Hebcal(Entity):
                     {
                         "className": "candles",
                         "hebrew": "הדלקת נרות",
-                        "date": str(self.holiday_in).replace(" ", "T"),
+                        "date": str(self.yomtov_in).replace(" ", "T"),
                         "allDay": False,
                         "title": "הדלקת נרות - ידני",
                     }
@@ -347,7 +371,7 @@ class Hebcal(Entity):
                     if is_in.isoweekday() == 5:
                         self.shabbat_in = is_in
                     elif is_in.isoweekday() != 5:
-                        self.holiday_in = is_in
+                        self.yomtov_in = is_in
                 if "havdalah" in list(extract_data.values()):
                     is_out = datetime.datetime.strptime(
                         extract_data["date"], "%Y-%m-%dT%H:%M:%S"
@@ -355,7 +379,7 @@ class Hebcal(Entity):
                     if is_out.isoweekday() == 6:
                         self.shabbat_out = is_out
                     elif is_out.isoweekday() < 5 or is_out.isoweekday() > 6:
-                        self.holiday_out = is_out
+                        self.yomtov_out = is_out
                 if "parashat" in list(extract_data.values()):
                     self.parashat = extract_data["hebrew"]
 
@@ -364,16 +388,17 @@ class Hebcal(Entity):
         if not (pathlib.Path(self.config_path + "hebcal_data.json").is_file()):
             await self.create_db_file()
         elif not self.hebcal_db or self.file_time_stamp is None:
-            with open(
-                    self.config_path + "hebcal_data.json", encoding="utf-8"
-            ) as data_file:
-                self.hebcal_db = json.loads(data_file.read())
-                await self.filter_db(self.hebcal_db, "update")
-            self.file_time_stamp = datetime.datetime.strptime(
-                self.hebcal_db[0]["update_date"], "%Y-%m-%d"
-            ).date()
+            await self.create_db_file()
         elif self.file_time_stamp != datetime.date.today() or len(self.hebcal_db) <= 2:
             await self.create_db_file()
+
+    @callback
+    def sunset_time(self, date, day):
+        date = datetime.datetime.strptime(date[:10], '%Y-%m-%d').date() + datetime.timedelta(days=day)
+        data = get_astral_event_date(self.hass, event="sunset", date=date)
+        sunset = self.utc_to_local(data, str(self._timezone))
+        # _LOGGER.error(sunset)
+        return sunset
 
     @callback
     def set_days(self):
@@ -398,41 +423,100 @@ class Hebcal(Entity):
         return switcher.get(day)
 
     @classmethod
-    def utc_to_local(cls, utc_dt):
-        return utc_dt.replace(tzinfo=datetime.timezone.utc).astimezone(tz=pytz.timezone('Asia/Jerusalem'))
+    def utc_to_local(cls, utc_dt, timezone):
+        return utc_dt.replace(tzinfo=datetime.timezone.utc).astimezone(tz=pytz.timezone(timezone))
 
     async def get_shabbat_time_in(self):
         """Get Shabbat entrance time"""
         if self.shabbat_in:
             return self.is_time_format(str(self.shabbat_in)[11:16])
-        return "No Data"
+        return "אין מידע"
 
     async def get_shabbat_time_out(self):
         """Get Shabbat exit time"""
         if self.shabbat_out:
             return self.is_time_format(str(self.shabbat_out)[11:16])
-        return "No Data"
+        return "אין מידע"
 
-    async def get_holiday_time_in(self):
+    async def get_yomtov_time_in(self):
         """Get Shabbat entrance time"""
-        if self.holiday_in:
-            return self.is_time_format(str(self.holiday_in)[11:16])
-        return "No Data"
+        if self.yomtov_in:
+            return self.is_time_format(str(self.yomtov_in)[11:16])
+        return "אין מידע"
 
-    async def get_holiday_time_out(self):
+    async def get_yomtov_time_out(self):
         """Get Shabbat exit time"""
-        if self.holiday_out:
-            return self.is_time_format(str(self.holiday_out)[11:16])
-        return "No Data"
+        if self.yomtov_out:
+            return self.is_time_format(str(self.yomtov_out)[11:16])
+        return "אין מידע"
 
     async def get_parasha(self) -> str:
         """Get parashat hashavo'h."""
         result = "שבת מיוחדת"
+        for extract_data in self.hebcal_db:
+            if "shabbat" in list(extract_data.values()):
+                self.parashat = self.parashat + " , " + extract_data["hebrew"]
         return self.parashat if self.parashat is not None else result
+
+    async def get_event_name(self) -> str:
+        """Get event name."""
+        result = HEBREW_WEEKDAY[datetime.datetime.today().isoweekday()]
+        today = self.utc_to_local(datetime.datetime.utcnow(), str(self._timezone)).replace(tzinfo=None)
+        holiday = None
+        roshchodesh = None
+        try:
+            for extract_data in self.hebcal_db:
+                if "holiday" in list(extract_data.values()):
+                    start = datetime.datetime.strptime(
+                        extract_data["start"], "%Y-%m-%dT%H:%M:%S"
+                    )
+                    end = datetime.datetime.strptime(
+                        extract_data["end"], "%Y-%m-%dT%H:%M:%S"
+                    )
+                    if start < today < end:
+                        holiday = extract_data["hebrew"]
+                elif "roshchodesh" in list(extract_data.values()):
+                    start = datetime.datetime.strptime(
+                        extract_data["start"], "%Y-%m-%dT%H:%M:%S"
+                    )
+                    end = datetime.datetime.strptime(
+                        extract_data["end"], "%Y-%m-%dT%H:%M:%S"
+                    )
+                    if start < today < end:
+                        roshchodesh = extract_data["hebrew"]
+            if holiday is not None:
+                result = result + " " + holiday
+            if roshchodesh is not None:
+                result = result + " " + roshchodesh
+            if not holiday and not roshchodesh:
+                result = result + " אין אירוע"
+        except Exception as e:
+            _LOGGER.error(str(e))
+        return result
+
+    async def get_omer_day(self) -> str:
+        """Get event name."""
+        result = "אין ספירה"
+        today = self.utc_to_local(datetime.datetime.utcnow(), str(self._timezone)).replace(tzinfo=None)
+        try:
+            for extract_data in self.hebcal_db:
+                if "omer" in list(extract_data.values()):
+                    start = datetime.datetime.strptime(
+                        extract_data["start"], "%Y-%m-%dT%H:%M:%S"
+                    )
+                    end = datetime.datetime.strptime(
+                        extract_data["end"], "%Y-%m-%dT%H:%M:%S"
+                    )
+                    if start < today < end:
+                        omer = extract_data["hebrew"].replace("עומר ", "")
+                        result = OMER_DAYS[self._omer_count_type][int(omer)]
+        except Exception as e:
+            _LOGGER.error(str(e))
+        return result
 
     async def is_shabbat(self) -> str:
         """Check if it is Shabbat now"""
-        today = self.utc_to_local(datetime.datetime.utcnow()).replace(tzinfo=None)
+        today = self.utc_to_local(datetime.datetime.utcnow(), str(self._timezone)).replace(tzinfo=None)
         if self.shabbat_in is not None and self.shabbat_out is not None:
             is_in = self.shabbat_in - datetime.timedelta(minutes=int(self._time_before))
             is_out = self.shabbat_out + datetime.timedelta(
@@ -441,34 +525,30 @@ class Hebcal(Entity):
             if is_in < today < is_out:
                 return "True"
             return "False"
-        return "No Data"
+        return "אין מידע"
 
-    async def is_holiday(self) -> str:
-        """Check if it is Holiday now"""
-        today = self.utc_to_local(datetime.datetime.utcnow()).replace(tzinfo=None)
-        if self.holiday_in is not None and self.holiday_out is not None:
-            is_in = self.holiday_in - datetime.timedelta(minutes=int(self._time_before))
-            is_out = self.holiday_out + datetime.timedelta(
+    async def is_yomtov(self) -> str:
+        """Check if it is yomtov now"""
+        today = self.utc_to_local(datetime.datetime.utcnow(), str(self._timezone)).replace(tzinfo=None)
+        if self.yomtov_in is not None and self.yomtov_out is not None:
+            is_in = self.yomtov_in - datetime.timedelta(minutes=int(self._time_before))
+            is_out = self.yomtov_out + datetime.timedelta(
                 minutes=int(self._time_after)
             )
             if is_in < today < is_out:
                 return "True"
             return "False"
-        return "No Data"
+        return "אין מידע"
 
-    async def get_holiday_name(self) -> str:
-        """Get holiday name"""
-        result = HEBREW_WEEKDAY[datetime.datetime.today().isoweekday()]
+    async def get_yomtov_name(self) -> str:
+        """Get yomtov name"""
+        result = "אין מידע"
         try:
             for extract_data in self.hebcal_db:
-                if any(
-                        x in ["holiday", "roshchodesh"] for x in list(extract_data.values())
-                ):
-                    start = datetime.datetime.strptime(
-                        extract_data["date"][:10], "%Y-%m-%d"
-                    ).date()
-                    end = start + datetime.timedelta(days=1)
-                    if start <= datetime.date.today() < end:
+                for x in extract_data.keys():
+                    if x == "yomtov":
+                        result = HEBREW_WEEKDAY[datetime.datetime.strptime(
+                            extract_data["date"][:10], "%Y-%m-%d").date().isoweekday()]
                         result = result + " " + extract_data["hebrew"]
                         return result
         except Exception as e:
