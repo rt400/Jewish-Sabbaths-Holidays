@@ -51,6 +51,8 @@ If you want to control the time off Havdala and time before entrace :
 
 - **tzeit_hakochavim**    # By defaule set True , If set False the havdalah exit use calc
 
+- **omer_count_type**     # By defaule set to 0 ( 0 - Yeman , 1 - Eshkenaz/Sfard ) , set the nosah omer count day
+
 - **resources:**          # Mandatory - You need to select atleast one
 
 ```yaml
@@ -59,10 +61,12 @@ If you want to control the time off Havdala and time before entrace :
     - parasha        # get parashat haShavoh
     - hebrew_date    # get the hebrew date on every day (changed in 00:00)
     - is_shabbat     # get if shabbat or not by True or False.
-    - holiday_in     # get holiday entrace
-    - holiday_out    # get shabbat exit
-    - is_holiday     # get if holiday or not by True or False.
-    - holiday_name   # get Holiday name
+    - yomtov_in     # get yomtov entrace
+    - yomtov_out    # get yomtov exit
+    - is_yomtov     # get if yomtov or not by True or False.
+    - yomtov_name    # get yomtov name.
+    - event_name     # get event name.
+    - omer_day       # get omer name.
 ```
 
 ## Full configuration example
@@ -77,16 +81,19 @@ sensor:
     time_before_check: 10
     time_after_check: 1
     tzeit_hakochavim: False
+    omer_count_type: 0
     resources:
       - shabbat_in
       - shabbat_out
       - parasha
       - hebrew_date
       - is_shabbat
-      - holiday_in
-      - holiday_out
-      - is_holiday
-      - holiday_name
+      - yomtov_in
+      - yomtov_out
+      - is_yomtov
+      - yomtov_name
+      - event_name
+      - omer_day
 ```
 
   **Good Luck !**
