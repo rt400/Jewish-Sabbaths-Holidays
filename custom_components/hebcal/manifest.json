@@ -4,6 +4,7 @@
   "documentation": "https://github.com/rt400/Jewish-Sabbaths-Holidays",
   "version": "1.0",
   "codeowners": ["@yuval_mejahez"],
+  "dependencies": [],
   "requirements": ["pytz==2021.1"],
   "issue_tracker": "https://github.com/rt400/Jewish-Sabbaths-Holidays/issues"
 }
