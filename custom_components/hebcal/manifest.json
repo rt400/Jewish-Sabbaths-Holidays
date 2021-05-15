@@ -6,5 +6,6 @@
   "codeowners": ["@yuval_mejahez"],
   "dependencies": [],
   "requirements": [],
-  "issue_tracker": "https://github.com/rt400/Jewish-Sabbaths-Holidays/issues"
+  "issue_tracker": "https://github.com/rt400/Jewish-Sabbaths-Holidays/issues",
+  "iot_class": "local_polling"
 }
