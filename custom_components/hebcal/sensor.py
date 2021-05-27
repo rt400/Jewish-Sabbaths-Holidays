@@ -293,9 +293,9 @@ class Hebcal(Entity):
                 if any(
                         x in ["yomtov", "holiday", "omer", "roshchodesh"] for x in list(extract_data.values())
                 ):
-                    extract_data["start"] = str(self.sunset_time(extract_data["date"], -1)).replace(" ", "T") \
+                    extract_data["start"] = str(self.sunset_time(extract_data["date"], -1))[:19].replace(" ", "T") \
                         .replace("+03:00", "").replace("+02:00", "")
-                    extract_data["end"] = str(self.sunset_time(extract_data["date"], 0)).replace(" ", "T") \
+                    extract_data["end"] = str(self.sunset_time(extract_data["date"], 0))[:19].replace(" ", "T") \
                         .replace("+03:00", "").replace("+02:00", "")
                     self.temp_data.append(extract_data)
             if self.shabbat_in and not self.shabbat_out:
