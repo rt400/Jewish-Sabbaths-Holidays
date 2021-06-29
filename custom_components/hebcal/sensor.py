@@ -38,7 +38,7 @@ from .const import (
     HEBCAL_CONVERTER_URL)
 
 _LOGGER = logging.getLogger(__name__)
-version = "2.0.0"
+version = "2.0.1"
 
 
 async def async_setup_platform(hass, config, async_add_entities, discovery_info=None):
@@ -145,10 +145,17 @@ class Hebcal(Entity):
         self._state = None
         self.parashat = None
         self.yomtov_name = None
+        self.omer = False
+        self.hanucka = False
 
     @property
     def name(self) -> str:
         """Return the name of the sensor"""
+        if self.type == "omer_day":
+            if self.omer:
+                return "עומר"
+            elif self.hanucka:
+                return "חנוכה"
         return SENSOR_TYPES[self.type][0]
 
     @property
@@ -192,18 +199,6 @@ class Hebcal(Entity):
         self.file_time_stamp = datetime.date.today()
         self.temp_data.append({"update_date": str(self.file_time_stamp)})
         try:
-            # s_url = HEBCAL_SHABBAT_URL.format(str(self.start.year), str(self.start.month), str(self.start.day),
-            #                                   str(self._latitude), str(self._longitude), str(self._timezone))
-            # if not self._tzeit_hakochavim:
-            #     s_url = HEBCAL_SHABBAT_URL_HAVDALAH.format(str(self.start.year), str(self.start.month),
-            #                                               str(self.start.day), str(self._latitude),
-            #                                               str(self._longitude), str(self._timezone),
-            #                                               str(self._havdalah))
-            # async with aiohttp.ClientSession() as session:
-            #     html = await fetch(
-            #         session, s_url, )
-            #     temp_db = json.loads(html)
-            #     await self.filter_db(temp_db["items"], "new")
             h_url = HEBCAL_DATE_URL.format(str(self.start), str(self.end), str(self._latitude), str(self._longitude),
                                            str(self._timezone))
             if not self._tzeit_hakochavim:
@@ -265,7 +260,7 @@ class Hebcal(Entity):
             for extract_data in temp_db:
                 if "date" in extract_data:
                     extract_data["date"] = (
-                        extract_data["date"].replace("+03:00", "").replace("+02:00", "")
+                        extract_data["date"][:19]
                     )
                 if "candles" in list(extract_data.values()):
                     is_in = datetime.datetime.strptime(
@@ -291,12 +286,10 @@ class Hebcal(Entity):
                     self.parashat = extract_data["hebrew"]
                     self.temp_data.append(extract_data)
                 if any(
-                        x in ["yomtov", "holiday", "omer", "roshchodesh"] for x in list(extract_data.values())
-                ):
-                    extract_data["start"] = str(self.sunset_time(extract_data["date"], -1))[:19].replace(" ", "T") \
-                        .replace("+03:00", "").replace("+02:00", "")
-                    extract_data["end"] = str(self.sunset_time(extract_data["date"], 0))[:19].replace(" ", "T") \
-                        .replace("+03:00", "").replace("+02:00", "")
+                        x in ["yomtov", "holiday", "omer", "roshchodesh"]
+                        for x in list(extract_data.values())):
+                    extract_data["start"] = str(self.sunset_time(extract_data["date"], -1))[:19].replace(" ", "T")
+                    extract_data["end"] = str(self.sunset_time(extract_data["date"], 0))[:19].replace(" ", "T")
                     self.temp_data.append(extract_data)
             if self.shabbat_in and not self.shabbat_out:
                 self.shabbat_out = (
@@ -362,7 +355,7 @@ class Hebcal(Entity):
             for extract_data in temp_db:
                 if "date" in extract_data:
                     extract_data["date"] = (
-                        extract_data["date"].replace("+03:00", "").replace("+02:00", "")
+                        extract_data["date"][:19]
                     )
                 if "candles" in list(extract_data.values()):
                     is_in = datetime.datetime.strptime(
@@ -510,6 +503,9 @@ class Hebcal(Entity):
                     if start < today < end:
                         omer = extract_data["hebrew"].replace("עומר ", "")
                         result = OMER_DAYS[self._omer_count_type][int(omer)]
+                        self.omer = True
+                    else:
+                        self.omer = False
         except Exception as e:
             _LOGGER.error(str(e))
         return result
