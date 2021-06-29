@@ -2,7 +2,7 @@
   "domain": "hebcal",
   "name": "Jewish Sabbaths Holidays",
   "documentation": "https://github.com/rt400/Jewish-Sabbaths-Holidays",
-  "version": "1.0",
+  "version": "2.0.1",
   "codeowners": ["@yuval_mejahez"],
   "dependencies": [],
   "requirements": [],
