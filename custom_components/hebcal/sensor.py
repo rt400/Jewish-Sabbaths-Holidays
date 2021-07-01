@@ -30,15 +30,16 @@ from .const import (
     DEFAULT_OMER_COUNT_TYPE,
     OMER_DAYS,
     HEBREW_WEEKDAY,
-    # FRIDAY_DAY,
-    # HEBCAL_SHABBAT_URL,
-    # HEBCAL_SHABBAT_URL_HAVDALAH,
     HEBCAL_DATE_URL,
     HEBCAL_DATE_URL_HAVDALAH,
-    HEBCAL_CONVERTER_URL)
+    HEBCAL_CONVERTER_URL,
+    LANGUAGE,
+    DEFAULT_LANGUAGE,
+    LANGUAGE_TYPES,
+)
 
 _LOGGER = logging.getLogger(__name__)
-version = "2.0.1"
+version = "2.0.2"
 
 
 async def async_setup_platform(hass, config, async_add_entities, discovery_info=None):
@@ -50,6 +51,7 @@ async def async_setup_platform(hass, config, async_add_entities, discovery_info=
     time_after = config.get(TIME_AFTER_CHECK)
     tzeit_hakochavim = config.get(TZEIT_HAKOCHAVIM)
     omer_count_type = config.get(OMER_COUNT_TYPE)
+    language = config.get(LANGUAGE)
 
     if None in (latitude, longitude):
         _LOGGER.error("Latitude or longitude not set in Home Assistant config")
@@ -73,6 +75,7 @@ async def async_setup_platform(hass, config, async_add_entities, discovery_info=
                 time_after,
                 tzeit_hakochavim,
                 omer_count_type,
+                language,
             )
         )
 
@@ -110,6 +113,8 @@ class Hebcal(Entity):
             time_after,
             tzeit_hakochavim,
             omer_count_type,
+            language,
+
     ):
         """Initialize the sensor"""
         self.type = sensor_type
@@ -141,6 +146,10 @@ class Hebcal(Entity):
             self._omer_count_type = DEFAULT_OMER_COUNT_TYPE
         else:
             self._omer_count_type = omer_count_type
+        if language is None:
+            self._language = DEFAULT_LANGUAGE
+        else:
+            self._language = language
         self.config_path = hass.config.path() + PLATFORM_FOLDER
         self._state = None
         self.parashat = None
@@ -151,12 +160,9 @@ class Hebcal(Entity):
     @property
     def name(self) -> str:
         """Return the name of the sensor"""
-        if self.type == "omer_day":
-            if self.omer:
-                return "עומר"
-            elif self.hanucka:
-                return "חנוכה"
-        return SENSOR_TYPES[self.type][0]
+        if self._language == "hebrew":
+            return SENSOR_TYPES[self.type][0]
+        return SENSOR_TYPES[self.type][2]
 
     @property
     def icon(self):
@@ -199,10 +205,12 @@ class Hebcal(Entity):
         self.file_time_stamp = datetime.date.today()
         self.temp_data.append({"update_date": str(self.file_time_stamp)})
         try:
-            h_url = HEBCAL_DATE_URL.format(str(self.start), str(self.end), str(self._latitude), str(self._longitude),
+            h_url = HEBCAL_DATE_URL.format(str(LANGUAGE_TYPES[self._language]), str(self.start), str(self.end),
+                                           str(self._latitude), str(self._longitude),
                                            str(self._timezone))
             if not self._tzeit_hakochavim:
-                h_url = HEBCAL_DATE_URL_HAVDALAH.format(str(self.start), str(self.end), str(self._latitude),
+                h_url = HEBCAL_DATE_URL_HAVDALAH.format(str(LANGUAGE_TYPES[self._language]), str(self.start),
+                                                        str(self.end), str(self._latitude),
                                                         str(self._longitude), str(self._timezone), str(self._havdalah))
             async with aiohttp.ClientSession() as session:
                 html = await fetch(
@@ -226,7 +234,8 @@ class Hebcal(Entity):
                 html = await fetch(
                     session, HEBCAL_CONVERTER_URL.format(self.file_time_stamp.year, self.file_time_stamp.month,
                                                          self.file_time_stamp.day), )
-                self.temp_data.append(json.loads(html))
+                html = await self.add_english_date(html)
+                self.temp_data.append(html)
 
         except Exception as e:
             _LOGGER.error("Error while create DB: %s. Restore From Backup", str(e))
@@ -283,7 +292,7 @@ class Hebcal(Entity):
                         self.yomtov_out = is_out
                         self.temp_data.append(extract_data)
                 if "parashat" in list(extract_data.values()):
-                    self.parashat = extract_data["hebrew"]
+                    self.parashat = extract_data["title"]
                     self.temp_data.append(extract_data)
                 if any(
                         x in ["yomtov", "holiday", "omer", "roshchodesh"]
@@ -374,7 +383,13 @@ class Hebcal(Entity):
                     elif is_out.isoweekday() < 5 or is_out.isoweekday() > 6:
                         self.yomtov_out = is_out
                 if "parashat" in list(extract_data.values()):
-                    self.parashat = extract_data["hebrew"]
+                    self.parashat = extract_data["title"]
+
+    async def add_english_date(self, data):
+        temp = json.loads(data)
+        english_date = str(temp["hd"]) + " " + str(temp["hm"]) + " " + str(temp["hy"])
+        temp["english"] = english_date
+        return temp
 
     async def update_db(self):
         """Updates the db"""
@@ -423,37 +438,51 @@ class Hebcal(Entity):
         """Get Shabbat entrance time"""
         if self.shabbat_in:
             return self.is_time_format(str(self.shabbat_in)[11:16])
-        return "אין מידע"
+        if self._language == "hebrew":
+            return "אין מידע"
+        return "No Info"
 
     async def get_shabbat_time_out(self):
         """Get Shabbat exit time"""
         if self.shabbat_out:
             return self.is_time_format(str(self.shabbat_out)[11:16])
-        return "אין מידע"
+        if self._language == "hebrew":
+            return "אין מידע"
+        return "No Info"
 
     async def get_yomtov_time_in(self):
         """Get Shabbat entrance time"""
         if self.yomtov_in:
             return self.is_time_format(str(self.yomtov_in)[11:16])
-        return "אין מידע"
+        if self._language == "hebrew":
+            return "אין מידע"
+        return "No Info"
 
     async def get_yomtov_time_out(self):
         """Get Shabbat exit time"""
         if self.yomtov_out:
             return self.is_time_format(str(self.yomtov_out)[11:16])
-        return "אין מידע"
+        if self._language == "hebrew":
+            return "אין מידע"
+        return "No Info"
 
     async def get_parasha(self) -> str:
         """Get parashat hashavo'h."""
-        result = "שבת מיוחדת"
+        if self._language == "hebrew":
+            result = "שבת מיוחדת"
+        else:
+            result = "Special Shabbat"
         for extract_data in self.hebcal_db:
             if "shabbat" in list(extract_data.values()):
-                self.parashat = self.parashat + " , " + extract_data["hebrew"]
+                self.parashat = self.parashat + " , " + extract_data["title"]
         return self.parashat if self.parashat is not None else result
 
     async def get_event_name(self) -> str:
         """Get event name."""
-        result = HEBREW_WEEKDAY[datetime.datetime.today().isoweekday()]
+        if self._language == "hebrew":
+            result = HEBREW_WEEKDAY[datetime.datetime.today().isoweekday()]
+        else:
+            result = str(datetime.date.today().strftime("%A")) + ","
         today = self.utc_to_local(datetime.datetime.utcnow(), str(self._timezone)).replace(tzinfo=None)
         holiday = None
         roshchodesh = None
@@ -467,7 +496,7 @@ class Hebcal(Entity):
                         extract_data["end"], "%Y-%m-%dT%H:%M:%S"
                     )
                     if start < today < end:
-                        holiday = extract_data["hebrew"]
+                        holiday = extract_data["title"]
                 elif "roshchodesh" in list(extract_data.values()):
                     start = datetime.datetime.strptime(
                         extract_data["start"], "%Y-%m-%dT%H:%M:%S"
@@ -482,14 +511,21 @@ class Hebcal(Entity):
             if roshchodesh is not None:
                 result = result + " " + roshchodesh
             if not holiday and not roshchodesh:
-                result = result + " אין אירוע"
+                if self._language == "hebrew":
+                    result = result + " אין אירוע"
+                else:
+                    result = result + " No Event"
         except Exception as e:
             _LOGGER.error(str(e))
         return result
 
     async def get_omer_day(self) -> str:
         """Get event name."""
-        result = "אין ספירה"
+        if self._language == "hebrew":
+            result = "אין ספירה"
+        else:
+            result = "No Omer Count"
+
         today = self.utc_to_local(datetime.datetime.utcnow(), str(self._timezone)).replace(tzinfo=None)
         try:
             for extract_data in self.hebcal_db:
@@ -521,7 +557,9 @@ class Hebcal(Entity):
             if is_in < today < is_out:
                 return "True"
             return "False"
-        return "אין מידע"
+        if self._language == "hebrew":
+            return "אין מידע"
+        return "No Info"
 
     async def is_yomtov(self) -> str:
         """Check if it is yomtov now"""
@@ -534,18 +572,23 @@ class Hebcal(Entity):
             if is_in < today < is_out:
                 return "True"
             return "False"
-        return "אין מידע"
+        if self._language == "hebrew":
+            return "אין מידע"
+        return "No Info"
 
     async def get_yomtov_name(self) -> str:
         """Get yomtov name"""
-        result = "אין מידע"
+        if self._language == "hebrew":
+            result = "אין מידע"
+        else:
+            result = "No Info"
         try:
             for extract_data in self.hebcal_db:
                 for x in extract_data.keys():
                     if x == "yomtov":
                         result = HEBREW_WEEKDAY[datetime.datetime.strptime(
                             extract_data["date"][:10], "%Y-%m-%d").date().isoweekday()]
-                        result = result + " " + extract_data["hebrew"]
+                        result = result + " " + extract_data["title"]
                         return result
         except Exception as e:
             _LOGGER.error(str(e))
@@ -553,8 +596,12 @@ class Hebcal(Entity):
 
     async def get_hebrew_date(self) -> str:
         """Convert to hebrew date"""
-        day = HEBREW_WEEKDAY[datetime.datetime.today().isoweekday()]
-        return day + self.hebcal_db[-1]["hebrew"]
+        if self._language == "hebrew":
+            day = HEBREW_WEEKDAY[datetime.datetime.today().isoweekday()]
+            return day + self.hebcal_db[-1]["hebrew"]
+        else:
+            day = datetime.date.today().strftime("%A")
+            return day + ", " + self.hebcal_db[-1]["english"]
 
     @classmethod
     def is_time_format(cls, input_time) -> str:
