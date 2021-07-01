@@ -54,6 +54,8 @@ If you want to control the time off Havdala and time before entrace :
 
 - **omer_count_type**     # By defaule set to 0 ( 0 - Yeman , 1 - Eshkenaz/Sfard ) , set the nosah omer count day
 
+- **language**            # By defaule set to hebrew ( english, hebrew, german, spanish, french, russian, polish, finnish, hungarian) , set the language
+
 - **resources:**          # Mandatory - You need to select atleast one
 
 ```yaml
@@ -83,6 +85,7 @@ sensor:
     time_after_check: 1
     tzeit_hakochavim: False
     omer_count_type: 0
+    language: english
     resources:
       - shabbat_in
       - shabbat_out
