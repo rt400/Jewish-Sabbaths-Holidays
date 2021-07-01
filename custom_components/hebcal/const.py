@@ -6,16 +6,11 @@ from homeassistant.const import CONF_LATITUDE, CONF_LONGITUDE, CONF_RESOURCES
 
 PLATFORM_FOLDER = "/custom_components/hebcal/"
 
-HEBCAL_SHABBAT_URL_HAVDALAH = "https://www.hebcal.com/shabbat?cfg=json&geo=pos&leyning=off&a=off&gy={}&gm={}&gd={}" \
-                              "&latitude={}&longitude={}&tzid={}&m={}"
-HEBCAL_SHABBAT_URL = "https://www.hebcal.com/shabbat?cfg=json&geo=pos&leyning=off&a=off&gy={}&gm={}&gd={}" \
-                     "&latitude={}&longitude={}&tzid={}"
-
 HEBCAL_DATE_URL_HAVDALAH = "https://www.hebcal.com/hebcal/?v=1&cfg=json&maj=on&min=on&nx=on&mf=on&ss=on&mod=on" \
-                           "&s=on&c=on&o=on&i=on&geo=pos&lg=h&start={}&end={}&latitude={}&longitude={}" \
+                           "&s=on&c=on&o=on&i=on&geo=pos&lg={}&start={}&end={}&latitude={}&longitude={}" \
                            "&tzid={}&m={}"
 HEBCAL_DATE_URL = "https://www.hebcal.com/hebcal/?v=1&cfg=json&maj=on&min=on&nx=on&mf=on&ss=on&mod=on&s=on&c=on" \
-                  "&o=on&i=on&geo=pos&lg=h&start={}&end={}&latitude={}&longitude={}&tzid={}"
+                  "&o=on&i=on&geo=pos&lg={}&start={}&end={}&latitude={}&longitude={}&tzid={}"
 
 HEBCAL_CONVERTER_URL = "https://www.hebcal.com/converter/?cfg=json&gy={}&gm={}&gd={}&g2h=1"
 
@@ -25,19 +20,32 @@ TIME_BEFORE_CHECK = "time_before_check"
 TIME_AFTER_CHECK = "time_after_check"
 TZEIT_HAKOCHAVIM = "tzeit_hakochavim"
 OMER_COUNT_TYPE = "omer_count_type"
+LANGUAGE = "language"
+
+LANGUAGE_TYPES = {
+    "english": "s",
+    "hebrew": "h",
+    "german": "de",
+    "spanish": "es",
+    "french": "fr",
+    "russian": "ru",
+    "polish": "pl",
+    "finnish": "fi",
+    "hungarian": "hu",
+}
 
 SENSOR_TYPES = {
-    "shabbat_in": ["כניסת השבת", "mdi:candle", "shabbat_in"],
-    "shabbat_out": ["צאת השבת", "mdi:exit-to-app", "shabbat_out"],
-    "is_shabbat": ["האם שבת", "mdi:candle", "is_shabbat"],
-    "parasha": ["פרשת השבוע", "mdi:book-open-variant", "parasha"],
-    "yomtov_in": ["כניסת יום טוב", "mdi:candle", "yomtov_in"],
-    "yomtov_out": ["צאת יום טוב", "mdi:exit-to-app", "yomtov_out"],
-    "is_yomtov": ["האם יום טוב", "mdi:candle", "is_yomtov"],
-    "yomtov_name": ["יום טוב", "mdi:book-open-variant", "yomtov_name"],
-    "event_name": ["אירוע", "mdi:book-open-variant", "event_name"],
-    "omer_day": ["ספירת העומר", "mdi:book-open-variant", "omer_day"],
-    "hebrew_date": ["תאריך עברי", "mdi:calendar", "hebrew_date"],
+    "shabbat_in": ["כניסת השבת", "mdi:candle", "Shabbat entry"],
+    "shabbat_out": ["צאת השבת", "mdi:exit-to-app", "Shabbat came out"],
+    "is_shabbat": ["האם שבת", "mdi:candle", "Is Shabbat?"],
+    "parasha": ["פרשת השבוע", "mdi:book-open-variant", "Parasha"],
+    "yomtov_in": ["כניסת יום טוב", "mdi:candle", "Yomtov entry"],
+    "yomtov_out": ["צאת יום טוב", "mdi:exit-to-app", "Yomtov came out"],
+    "is_yomtov": ["האם יום טוב", "mdi:candle", "Is Yomtov?"],
+    "yomtov_name": ["יום טוב", "mdi:book-open-variant", "Yomtov Name"],
+    "event_name": ["אירוע", "mdi:book-open-variant", "Event Name"],
+    "omer_day": ["ספירת העומר", "mdi:book-open-variant", "Omer Count Day"],
+    "hebrew_date": ["תאריך עברי", "mdi:calendar", "Hebrew Date"],
 }
 
 HEBREW_WEEKDAY = {7: "יום ראשון, ",
@@ -166,6 +174,7 @@ DEFAULT_TIME_BEFORE_CHECK = 10
 DEFAULT_TIME_AFTER_CHECK = 10
 DEFAULT_TZEIT_HAKOCHAVIM = True
 DEFAULT_OMER_COUNT_TYPE = 0
+DEFAULT_LANGUAGE = "hebrew"
 
 PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(
     {
@@ -176,6 +185,7 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(
         vol.Optional(TIME_AFTER_CHECK, default=DEFAULT_TIME_AFTER_CHECK): cv.positive_int,
         vol.Optional(TZEIT_HAKOCHAVIM, default=DEFAULT_TZEIT_HAKOCHAVIM): cv.boolean,
         vol.Optional(OMER_COUNT_TYPE, default=DEFAULT_OMER_COUNT_TYPE): cv.positive_int,
+        vol.Optional(LANGUAGE, default=DEFAULT_LANGUAGE): cv.string,
         vol.Optional(
             CONF_RESOURCES,
             default=[
