@@ -14,6 +14,9 @@ from homeassistant.const import CONF_LATITUDE, CONF_LONGITUDE, CONF_RESOURCES
 from homeassistant.core import callback
 from homeassistant.helpers.entity import Entity, async_generate_entity_id
 from homeassistant.helpers.sun import get_astral_event_date
+import homeassistant.helpers.config_validation as cv
+import voluptuous as vol
+from homeassistant.components.sensor import PLATFORM_SCHEMA
 from .const import (
     HAVDALAH_MINUTES,
     PLATFORM_FOLDER,
@@ -36,17 +39,47 @@ from .const import (
     LANGUAGE,
     DEFAULT_LANGUAGE,
     LANGUAGE_TYPES,
+    LANGUAGE_DATA,
 )
 
 _LOGGER = logging.getLogger(__name__)
-version = "2.0.2"
+version = "2.0.3"
+
+PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(
+    {
+        vol.Optional(CONF_LATITUDE): cv.latitude,
+        vol.Optional(CONF_LONGITUDE): cv.longitude,
+        vol.Required(HAVDALAH_MINUTES, default=DEFAULT_HAVDALAH_MINUTES): cv.positive_int,
+        vol.Optional(TIME_BEFORE_CHECK, default=DEFAULT_TIME_BEFORE_CHECK): cv.positive_int,
+        vol.Optional(TIME_AFTER_CHECK, default=DEFAULT_TIME_AFTER_CHECK): cv.positive_int,
+        vol.Optional(TZEIT_HAKOCHAVIM, default=DEFAULT_TZEIT_HAKOCHAVIM): cv.boolean,
+        vol.Optional(OMER_COUNT_TYPE, default=DEFAULT_OMER_COUNT_TYPE): cv.positive_int,
+        vol.Optional(LANGUAGE, default=DEFAULT_LANGUAGE): cv.string,
+        vol.Optional(
+            CONF_RESOURCES,
+            default=[
+                "shabbat_in",
+                "shabbat_out",
+                "parasha",
+                "hebrew_date",
+                "is_shabbat",
+                "yomtov_in",
+                "yomtov_out",
+                "is_yomtov",
+                "yomtov_name",
+                "omer_day",
+                "event_name",
+            ],
+        ): vol.All(cv.ensure_list, [vol.In(SENSOR_TYPES)]),
+    }
+)
 
 
 async def async_setup_platform(hass, config, async_add_entities, discovery_info=None):
     """Set up the Hebcal config sensors."""
-    havdalah = config.get(HAVDALAH_MINUTES)
     latitude = config.get(CONF_LATITUDE, hass.config.latitude)
     longitude = config.get(CONF_LONGITUDE, hass.config.longitude)
+    havdalah = config.get(HAVDALAH_MINUTES)
     time_before = config.get(TIME_BEFORE_CHECK)
     time_after = config.get(TIME_AFTER_CHECK)
     tzeit_hakochavim = config.get(TZEIT_HAKOCHAVIM)
@@ -54,7 +87,7 @@ async def async_setup_platform(hass, config, async_add_entities, discovery_info=
     language = config.get(LANGUAGE)
 
     if None in (latitude, longitude):
-        _LOGGER.error("Latitude or longitude not set in Home Assistant config")
+        _LOGGER.error("Latitude or longitude are not set in Home Assistant config")
         return
 
     entities = []
@@ -126,30 +159,12 @@ class Hebcal(Entity):
         self._latitude = latitude
         self._longitude = longitude
         self._timezone = timezone
-        if havdalah is None:
-            self._havdalah = DEFAULT_HAVDALAH_MINUTES
-        else:
-            self._havdalah = havdalah
-        if time_before is None:
-            self._time_before = DEFAULT_TIME_BEFORE_CHECK
-        else:
-            self._time_before = time_before
-        if time_after is None:
-            self._time_after = DEFAULT_TIME_AFTER_CHECK
-        else:
-            self._time_after = time_after
-        if tzeit_hakochavim is None:
-            self._tzeit_hakochavim = DEFAULT_TZEIT_HAKOCHAVIM
-        else:
-            self._tzeit_hakochavim = tzeit_hakochavim
-        if omer_count_type is None:
-            self._omer_count_type = DEFAULT_OMER_COUNT_TYPE
-        else:
-            self._omer_count_type = omer_count_type
-        if language is None:
-            self._language = DEFAULT_LANGUAGE
-        else:
-            self._language = language
+        self._havdalah = havdalah
+        self._time_before = time_before
+        self._time_after = time_after
+        self._tzeit_hakochavim = tzeit_hakochavim
+        self._omer_count_type = omer_count_type
+        self._language = language
         self.config_path = hass.config.path() + PLATFORM_FOLDER
         self._state = None
         self.parashat = None
@@ -438,43 +453,32 @@ class Hebcal(Entity):
         """Get Shabbat entrance time"""
         if self.shabbat_in:
             return self.is_time_format(str(self.shabbat_in)[11:16])
-        if self._language == "hebrew":
-            return "אין מידע"
-        return "No Info"
+        return LANGUAGE_DATA[self._language][0]
 
     async def get_shabbat_time_out(self):
         """Get Shabbat exit time"""
         if self.shabbat_out:
             return self.is_time_format(str(self.shabbat_out)[11:16])
-        if self._language == "hebrew":
-            return "אין מידע"
-        return "No Info"
+        return LANGUAGE_DATA[self._language][0]
 
     async def get_yomtov_time_in(self):
         """Get Shabbat entrance time"""
         if self.yomtov_in:
             return self.is_time_format(str(self.yomtov_in)[11:16])
-        if self._language == "hebrew":
-            return "אין מידע"
-        return "No Info"
+        return LANGUAGE_DATA[self._language][0]
 
     async def get_yomtov_time_out(self):
         """Get Shabbat exit time"""
         if self.yomtov_out:
             return self.is_time_format(str(self.yomtov_out)[11:16])
-        if self._language == "hebrew":
-            return "אין מידע"
-        return "No Info"
+        return LANGUAGE_DATA[self._language][0]
 
     async def get_parasha(self) -> str:
         """Get parashat hashavo'h."""
-        if self._language == "hebrew":
-            result = "שבת מיוחדת"
-        else:
-            result = "Special Shabbat"
+        result = LANGUAGE_DATA[self._language][2]
         for extract_data in self.hebcal_db:
             if "shabbat" in list(extract_data.values()):
-                self.parashat = self.parashat + " , " + extract_data["title"]
+                return self.parashat + " , " + extract_data["title"]
         return self.parashat if self.parashat is not None else result
 
     async def get_event_name(self) -> str:
@@ -511,21 +515,14 @@ class Hebcal(Entity):
             if roshchodesh is not None:
                 result = result + " " + roshchodesh
             if not holiday and not roshchodesh:
-                if self._language == "hebrew":
-                    result = result + " אין אירוע"
-                else:
-                    result = result + " No Event"
+                result = LANGUAGE_DATA[self._language][1]
         except Exception as e:
             _LOGGER.error(str(e))
         return result
 
     async def get_omer_day(self) -> str:
         """Get event name."""
-        if self._language == "hebrew":
-            result = "אין ספירה"
-        else:
-            result = "No Omer Count"
-
+        result = LANGUAGE_DATA[self._language][3]
         today = self.utc_to_local(datetime.datetime.utcnow(), str(self._timezone)).replace(tzinfo=None)
         try:
             for extract_data in self.hebcal_db:
@@ -557,9 +554,7 @@ class Hebcal(Entity):
             if is_in < today < is_out:
                 return "True"
             return "False"
-        if self._language == "hebrew":
-            return "אין מידע"
-        return "No Info"
+        return LANGUAGE_DATA[self._language][0]
 
     async def is_yomtov(self) -> str:
         """Check if it is yomtov now"""
@@ -572,16 +567,11 @@ class Hebcal(Entity):
             if is_in < today < is_out:
                 return "True"
             return "False"
-        if self._language == "hebrew":
-            return "אין מידע"
-        return "No Info"
+        return LANGUAGE_DATA[self._language][0]
 
     async def get_yomtov_name(self) -> str:
         """Get yomtov name"""
-        if self._language == "hebrew":
-            result = "אין מידע"
-        else:
-            result = "No Info"
+        result = LANGUAGE_DATA[self._language][0]
         try:
             for extract_data in self.hebcal_db:
                 for x in extract_data.keys():
