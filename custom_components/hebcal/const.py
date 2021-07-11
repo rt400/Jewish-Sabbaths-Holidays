@@ -1,8 +1,4 @@
 """Constants"""
-import homeassistant.helpers.config_validation as cv
-import voluptuous as vol
-from homeassistant.components.sensor import PLATFORM_SCHEMA
-from homeassistant.const import CONF_LATITUDE, CONF_LONGITUDE, CONF_RESOURCES
 
 PLATFORM_FOLDER = "/custom_components/hebcal/"
 
@@ -22,6 +18,13 @@ TZEIT_HAKOCHAVIM = "tzeit_hakochavim"
 OMER_COUNT_TYPE = "omer_count_type"
 LANGUAGE = "language"
 
+DEFAULT_HAVDALAH_MINUTES = 42
+DEFAULT_TIME_BEFORE_CHECK = 10
+DEFAULT_TIME_AFTER_CHECK = 10
+DEFAULT_TZEIT_HAKOCHAVIM = True
+DEFAULT_OMER_COUNT_TYPE = 0
+DEFAULT_LANGUAGE = "hebrew"
+
 LANGUAGE_TYPES = {
     "english": "s",
     "hebrew": "h",
@@ -33,6 +36,18 @@ LANGUAGE_TYPES = {
     "finnish": "fi",
     "hungarian": "hu",
 }
+
+LANGUAGE_DATA = {
+        "english": ["No Info", "No Event", "Special Shabbat", "No Omer Count"],
+        "hebrew": ["אין מידע", "אין אירוע", "שבת מיוחדת", "אין ספירת העומר"],
+        "german": ["Keine Info", "Kein Ereignis", "Besonderer Schabbat", "Keine Omerzählung"],
+        "spanish": ["Sin información", "Sin evento", "Shabat especial", "Sin recuento de Omer"],
+        "french": ["Pas d'infos", "Pas d'événement", "Chabbat spécial", "Pas de décompte d'Omer"],
+        "russian": ["Нет информации", "Нет событий", "Особый Шаббат", "Нет счета Омера"],
+        "polish": ["Brak informacji", "Brak wydarzenia", "Specjalny szabat", "Bez liczenia omerów"],
+        "finnish": ["Ei tietoja", "Ei tapahtumia", "Erityinen sapatti", "Ei Omer Count"],
+        "hungarian": ["Nincs információ", "Nincs esemény", "Különleges szombat", "Nincs Omer gróf"],
+    }
 
 SENSOR_TYPES = {
     "shabbat_in": ["כניסת השבת", "mdi:candle", "Shabbat entry"],
@@ -168,39 +183,3 @@ OMER_DAYS = [
         49: "הַיוֹם תִּשְׁעָה וְאַרְבָּעִים יוֹם שֶׁהֵם שִׁבְעָה שָׁבוּעוֹת לָעֽוֹמֶר"
     }
 ]
-
-DEFAULT_HAVDALAH_MINUTES = 42
-DEFAULT_TIME_BEFORE_CHECK = 10
-DEFAULT_TIME_AFTER_CHECK = 10
-DEFAULT_TZEIT_HAKOCHAVIM = True
-DEFAULT_OMER_COUNT_TYPE = 0
-DEFAULT_LANGUAGE = "hebrew"
-
-PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(
-    {
-        vol.Optional(CONF_LATITUDE): cv.latitude,
-        vol.Optional(CONF_LONGITUDE): cv.longitude,
-        vol.Optional(HAVDALAH_MINUTES, default=DEFAULT_HAVDALAH_MINUTES): cv.positive_int,
-        vol.Optional(TIME_BEFORE_CHECK, default=DEFAULT_TIME_BEFORE_CHECK): cv.positive_int,
-        vol.Optional(TIME_AFTER_CHECK, default=DEFAULT_TIME_AFTER_CHECK): cv.positive_int,
-        vol.Optional(TZEIT_HAKOCHAVIM, default=DEFAULT_TZEIT_HAKOCHAVIM): cv.boolean,
-        vol.Optional(OMER_COUNT_TYPE, default=DEFAULT_OMER_COUNT_TYPE): cv.positive_int,
-        vol.Optional(LANGUAGE, default=DEFAULT_LANGUAGE): cv.string,
-        vol.Optional(
-            CONF_RESOURCES,
-            default=[
-                "shabbat_in",
-                "shabbat_out",
-                "parasha",
-                "hebrew_date",
-                "is_shabbat",
-                "yomtov_in",
-                "yomtov_out",
-                "is_yomtov",
-                "yomtov_name",
-                "omer_day",
-                "event_name",
-            ],
-        ): vol.All(cv.ensure_list, [vol.In(SENSOR_TYPES)]),
-    }
-)
