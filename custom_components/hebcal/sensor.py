@@ -1,5 +1,5 @@
 """
-Platform to get Hebcalh Times And Hebcalh information for Home Assistant.
+Platform to get Hebcal Times And Hebcalh information for Home Assistant.
 """
 import codecs
 import datetime
@@ -7,16 +7,18 @@ import json
 import logging
 import pathlib
 import time
+
 import aiohttp
+import homeassistant.helpers.config_validation as cv
 import pytz
+import voluptuous as vol
 from homeassistant.components.sensor import ENTITY_ID_FORMAT
-from homeassistant.const import CONF_LATITUDE, CONF_LONGITUDE, CONF_RESOURCES
+from homeassistant.components.sensor import PLATFORM_SCHEMA
+from homeassistant.const import CONF_LATITUDE, CONF_LONGITUDE, CONF_TIME_ZONE, CONF_RESOURCES
 from homeassistant.core import callback
 from homeassistant.helpers.entity import Entity, async_generate_entity_id
 from homeassistant.helpers.sun import get_astral_event_date
-import homeassistant.helpers.config_validation as cv
-import voluptuous as vol
-from homeassistant.components.sensor import PLATFORM_SCHEMA
+
 from .const import (
     HAVDALAH_MINUTES,
     PLATFORM_FOLDER,
@@ -38,18 +40,20 @@ from .const import (
     HEBCAL_CONVERTER_URL,
     LANGUAGE,
     DEFAULT_LANGUAGE,
-    LANGUAGE_TYPES,
     LANGUAGE_DATA,
+    HEBCAL_ZMANIM_URL,
 )
 
 _LOGGER = logging.getLogger(__name__)
-version = "2.0.3"
+
+version = "2.0.4"
 
 PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(
     {
         vol.Optional(CONF_LATITUDE): cv.latitude,
         vol.Optional(CONF_LONGITUDE): cv.longitude,
-        vol.Required(HAVDALAH_MINUTES, default=DEFAULT_HAVDALAH_MINUTES): cv.positive_int,
+        vol.Optional(CONF_TIME_ZONE): cv.string,
+        vol.Optional(HAVDALAH_MINUTES, default=DEFAULT_HAVDALAH_MINUTES): cv.positive_int,
         vol.Optional(TIME_BEFORE_CHECK, default=DEFAULT_TIME_BEFORE_CHECK): cv.positive_int,
         vol.Optional(TIME_AFTER_CHECK, default=DEFAULT_TIME_AFTER_CHECK): cv.positive_int,
         vol.Optional(TZEIT_HAKOCHAVIM, default=DEFAULT_TZEIT_HAKOCHAVIM): cv.boolean,
@@ -69,6 +73,7 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(
                 "yomtov_name",
                 "omer_day",
                 "event_name",
+                "zmanim",
             ],
         ): vol.All(cv.ensure_list, [vol.In(SENSOR_TYPES)]),
     }
@@ -79,6 +84,7 @@ async def async_setup_platform(hass, config, async_add_entities, discovery_info=
     """Set up the Hebcal config sensors."""
     latitude = config.get(CONF_LATITUDE, hass.config.latitude)
     longitude = config.get(CONF_LONGITUDE, hass.config.longitude)
+    timezone = config.get(CONF_TIME_ZONE, hass.config.time_zone)
     havdalah = config.get(HAVDALAH_MINUTES)
     time_before = config.get(TIME_BEFORE_CHECK)
     time_after = config.get(TIME_AFTER_CHECK)
@@ -86,8 +92,8 @@ async def async_setup_platform(hass, config, async_add_entities, discovery_info=
     omer_count_type = config.get(OMER_COUNT_TYPE)
     language = config.get(LANGUAGE)
 
-    if None in (latitude, longitude):
-        _LOGGER.error("Latitude or longitude are not set in Home Assistant config")
+    if None in (latitude, longitude, timezone):
+        _LOGGER.error("Latitude or Longitude or TimeZone are not set in Home Assistant config")
         return
 
     entities = []
@@ -100,7 +106,7 @@ async def async_setup_platform(hass, config, async_add_entities, discovery_info=
             Hebcal(
                 hass,
                 sensor_type,
-                hass.config.time_zone,
+                timezone,
                 latitude,
                 longitude,
                 havdalah,
@@ -171,6 +177,7 @@ class Hebcal(Entity):
         self.yomtov_name = None
         self.omer = False
         self.hanucka = False
+        self.zmanim = {}
 
     @property
     def name(self) -> str:
@@ -194,6 +201,13 @@ class Hebcal(Entity):
         """Return the state of the sensor"""
         return self._state
 
+    @property
+    def extra_state_attributes(self):
+        """Return the state attributes."""
+        if self.type != "zmanim":
+            return {}
+        return self.zmanim
+
     async def async_update(self):
         """Update our sensor state"""
         await self.update_db()
@@ -209,6 +223,7 @@ class Hebcal(Entity):
             "event_name": self.get_event_name,
             "omer_day": self.get_omer_day,
             "hebrew_date": self.get_hebrew_date,
+            "zmanim": self.get_zmanim,
         }
         self._state = await type_to_func[self.type]()
         await self.async_update_ha_state()
@@ -220,17 +235,23 @@ class Hebcal(Entity):
         self.file_time_stamp = datetime.date.today()
         self.temp_data.append({"update_date": str(self.file_time_stamp)})
         try:
-            h_url = HEBCAL_DATE_URL.format(str(LANGUAGE_TYPES[self._language]), str(self.start), str(self.end),
+            h_url = HEBCAL_DATE_URL.format(str(LANGUAGE_DATA[self._language][-1]), str(self.start), str(self.end),
                                            str(self._latitude), str(self._longitude),
                                            str(self._timezone))
             if not self._tzeit_hakochavim:
-                h_url = HEBCAL_DATE_URL_HAVDALAH.format(str(LANGUAGE_TYPES[self._language]), str(self.start),
+                h_url = HEBCAL_DATE_URL_HAVDALAH.format(str(LANGUAGE_DATA[self._language][-1]), str(self.start),
                                                         str(self.end), str(self._latitude),
                                                         str(self._longitude), str(self._timezone), str(self._havdalah))
             async with aiohttp.ClientSession() as session:
                 html = await fetch(
                     session, h_url, )
                 temp_db = json.loads(html)
+                html = await fetch(
+                    session, HEBCAL_ZMANIM_URL.format(str(self._latitude), str(self._longitude),
+                                                      str(self._timezone), str(self.file_time_stamp)), )
+                zmanim_temp = json.loads(html)['times']
+                zmanim_temp.update({'title': 'day_zmanim'})
+                temp_db['items'].append(zmanim_temp)
                 with codecs.open(
                         self.config_path + "hebcal_data_full.json", "w", encoding="utf-8"
                 ) as outfile:
@@ -309,6 +330,12 @@ class Hebcal(Entity):
                 if "parashat" in list(extract_data.values()):
                     self.parashat = extract_data["title"]
                     self.temp_data.append(extract_data)
+                if "day_zmanim" in list(extract_data.values()):
+                    for x in LANGUAGE_DATA[self._language][4]:
+                        self.zmanim.update({LANGUAGE_DATA[self._language][4][x]: extract_data[x][11:16]})
+                    self.zmanim.update({'title': 'day_zmanim'})
+                    self.temp_data.append(self.zmanim)
+                    self.zmanim.pop('title')
                 if any(
                         x in ["yomtov", "holiday", "omer", "roshchodesh"]
                         for x in list(extract_data.values())):
@@ -399,6 +426,9 @@ class Hebcal(Entity):
                         self.yomtov_out = is_out
                 if "parashat" in list(extract_data.values()):
                     self.parashat = extract_data["title"]
+                if "day_zmanim" in list(extract_data.values()):
+                    self.zmanim = extract_data
+                    self.zmanim.pop('title')
 
     async def add_english_date(self, data):
         temp = json.loads(data)
@@ -592,6 +622,9 @@ class Hebcal(Entity):
         else:
             day = datetime.date.today().strftime("%A")
             return day + ", " + self.hebcal_db[-1]["english"]
+
+    async def get_zmanim(self):
+        return "זמני יום " + str(self.file_time_stamp)
 
     @classmethod
     def is_time_format(cls, input_time) -> str:
