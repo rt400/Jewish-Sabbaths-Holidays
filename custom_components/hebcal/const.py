@@ -5,8 +5,11 @@ PLATFORM_FOLDER = "/custom_components/hebcal/"
 HEBCAL_DATE_URL_HAVDALAH = "https://www.hebcal.com/hebcal/?v=1&cfg=json&maj=on&min=on&nx=on&mf=on&ss=on&mod=on" \
                            "&s=on&c=on&o=on&i=on&geo=pos&lg={}&start={}&end={}&latitude={}&longitude={}" \
                            "&tzid={}&m={}"
+
 HEBCAL_DATE_URL = "https://www.hebcal.com/hebcal/?v=1&cfg=json&maj=on&min=on&nx=on&mf=on&ss=on&mod=on&s=on&c=on" \
                   "&o=on&i=on&geo=pos&lg={}&start={}&end={}&latitude={}&longitude={}&tzid={}"
+
+HEBCAL_ZMANIM_URL = "https://www.hebcal.com/zmanim?cfg=json&geo=pos&latitude={}&longitude={}&tzid={}&date={}"
 
 HEBCAL_CONVERTER_URL = "https://www.hebcal.com/converter/?cfg=json&gy={}&gm={}&gd={}&g2h=1"
 
@@ -25,29 +28,78 @@ DEFAULT_TZEIT_HAKOCHAVIM = True
 DEFAULT_OMER_COUNT_TYPE = 0
 DEFAULT_LANGUAGE = "hebrew"
 
-LANGUAGE_TYPES = {
-    "english": "s",
-    "hebrew": "h",
-    "german": "de",
-    "spanish": "es",
-    "french": "fr",
-    "russian": "ru",
-    "polish": "pl",
-    "finnish": "fi",
-    "hungarian": "hu",
-}
-
 LANGUAGE_DATA = {
-        "english": ["No Info", "No Event", "Special Shabbat", "No Omer Count"],
-        "hebrew": ["אין מידע", "אין אירוע", "שבת מיוחדת", "אין ספירת העומר"],
-        "german": ["Keine Info", "Kein Ereignis", "Besonderer Schabbat", "Keine Omerzählung"],
-        "spanish": ["Sin información", "Sin evento", "Shabat especial", "Sin recuento de Omer"],
-        "french": ["Pas d'infos", "Pas d'événement", "Chabbat spécial", "Pas de décompte d'Omer"],
-        "russian": ["Нет информации", "Нет событий", "Особый Шаббат", "Нет счета Омера"],
-        "polish": ["Brak informacji", "Brak wydarzenia", "Specjalny szabat", "Bez liczenia omerów"],
-        "finnish": ["Ei tietoja", "Ei tapahtumia", "Erityinen sapatti", "Ei Omer Count"],
-        "hungarian": ["Nincs információ", "Nincs esemény", "Különleges szombat", "Nincs Omer gróf"],
-    }
+    "english": ["No Info", "No Event", "Special Shabbat", "No Omer Count",
+                {'chatzotNight': 'Midnight', 'alotHaShachar': 'Alot Ha Shachar',
+                 'misheyakir': ' Time for Talit and Tefilin',
+                 'misheyakirMachmir': 'Time for Talit and Tefilin - Strictness',
+                 'dawn': 'Dawn', 'sunrise': 'Sunrize', 'sofZmanShma': 'End Time Of Shma',
+                 'sofZmanTfilla': 'End Time Of Shaarit', 'chatzot': 'Midday', 'minchaGedola': 'Mincha Gedola',
+                 'minchaKetana': 'Mincha Ketana', 'plagHaMincha': 'Plag HaMincha', 'sunset': 'Sunset',
+                 'dusk': 'Dusk', }, "s"],
+    "hebrew": ["אין מידע", "אין אירוע", "שבת מיוחדת", "אין ספירת העומר",
+               {'chatzotNight': 'חצות לילה', 'alotHaShachar': 'עלות השחר', 'misheyakir': ' זמן הנחת טלית ותפילין',
+                'misheyakirMachmir': 'זמן הנחת טלית ותפילין - מחמיר', 'dawn': 'שחר', 'sunrise': 'זריחה',
+                'sofZmanShma': 'סוף זמן קריאת שמע', 'sofZmanTfilla': 'סוף זמן תפילת שחרית', 'chatzot': 'חצות היום',
+                'minchaGedola': 'מנחה גדולה', 'minchaKetana': 'מנחה קטנה', 'plagHaMincha': 'פלג המנחה',
+                'sunset': 'שקיעה', 'dusk': 'בין הערבים'}, "h"],
+    "german": ["Keine Info", "Kein Ereignis", "Besonderer Schabbat", "Keine Omerzählung",
+               {'chatzotNight': 'Midnight', 'alotHaShachar': 'Alot Ha Shachar',
+                'misheyakir': ' Time for Talit and Tefilin',
+                'misheyakirMachmir': 'Time for Talit and Tefilin - Strictness',
+                'dawn': 'Dawn', 'sunrise': 'Sunrize', 'sofZmanShma': 'End Time Of Shma',
+                'sofZmanTfilla': 'End Time Of Shaarit', 'chatzot': 'Midday', 'minchaGedola': 'Mincha Gedola',
+                'minchaKetana': 'Mincha Ketana', 'plagHaMincha': 'Plag HaMincha', 'sunset': 'Sunset',
+                'dusk': 'Dusk', }, "de"],
+    "spanish": ["Sin información", "Sin evento", "Shabat especial", "Sin recuento de Omer",
+                {'chatzotNight': 'Midnight', 'alotHaShachar': 'Alot Ha Shachar',
+                 'misheyakir': ' Time for Talit and Tefilin',
+                 'misheyakirMachmir': 'Time for Talit and Tefilin - Strictness',
+                 'dawn': 'Dawn', 'sunrise': 'Sunrize', 'sofZmanShma': 'End Time Of Shma',
+                 'sofZmanTfilla': 'End Time Of Shaarit', 'chatzot': 'Midday', 'minchaGedola': 'Mincha Gedola',
+                 'minchaKetana': 'Mincha Ketana', 'plagHaMincha': 'Plag HaMincha', 'sunset': 'Sunset',
+                 'dusk': 'Dusk', }, "es"],
+    "french": ["Pas d'infos", "Pas d'événement", "Chabbat spécial", "Pas de décompte d'Omer",
+               {'chatzotNight': 'Midnight', 'alotHaShachar': 'Alot Ha Shachar',
+                'misheyakir': ' Time for Talit and Tefilin',
+                'misheyakirMachmir': 'Time for Talit and Tefilin - Strictness',
+                'dawn': 'Dawn', 'sunrise': 'Sunrize', 'sofZmanShma': 'End Time Of Shma',
+                'sofZmanTfilla': 'End Time Of Shaarit', 'chatzot': 'Midday', 'minchaGedola': 'Mincha Gedola',
+                'minchaKetana': 'Mincha Ketana', 'plagHaMincha': 'Plag HaMincha', 'sunset': 'Sunset',
+                'dusk': 'Dusk', }, "fr"],
+    "russian": ["Нет информации", "Нет событий", "Особый Шаббат", "Нет счета Омера",
+                {'chatzotNight': 'Midnight', 'alotHaShachar': 'Alot Ha Shachar',
+                 'misheyakir': ' Time for Talit and Tefilin',
+                 'misheyakirMachmir': 'Time for Talit and Tefilin - Strictness',
+                 'dawn': 'Dawn', 'sunrise': 'Sunrize', 'sofZmanShma': 'End Time Of Shma',
+                 'sofZmanTfilla': 'End Time Of Shaarit', 'chatzot': 'Midday', 'minchaGedola': 'Mincha Gedola',
+                 'minchaKetana': 'Mincha Ketana', 'plagHaMincha': 'Plag HaMincha', 'sunset': 'Sunset',
+                 'dusk': 'Dusk', }, "ru"],
+    "polish": ["Brak informacji", "Brak wydarzenia", "Specjalny szabat", "Bez liczenia omerów",
+               {'chatzotNight': 'Midnight', 'alotHaShachar': 'Alot Ha Shachar',
+                'misheyakir': ' Time for Talit and Tefilin',
+                'misheyakirMachmir': 'Time for Talit and Tefilin - Strictness',
+                'dawn': 'Dawn', 'sunrise': 'Sunrize', 'sofZmanShma': 'End Time Of Shma',
+                'sofZmanTfilla': 'End Time Of Shaarit', 'chatzot': 'Midday', 'minchaGedola': 'Mincha Gedola',
+                'minchaKetana': 'Mincha Ketana', 'plagHaMincha': 'Plag HaMincha', 'sunset': 'Sunset',
+                'dusk': 'Dusk', }, "pl"],
+    "finnish": ["Ei tietoja", "Ei tapahtumia", "Erityinen sapatti", "Ei Omer Count",
+                {'chatzotNight': 'Midnight', 'alotHaShachar': 'Alot Ha Shachar',
+                 'misheyakir': ' Time for Talit and Tefilin',
+                 'misheyakirMachmir': 'Time for Talit and Tefilin - Strictness',
+                 'dawn': 'Dawn', 'sunrise': 'Sunrize', 'sofZmanShma': 'End Time Of Shma',
+                 'sofZmanTfilla': 'End Time Of Shaarit', 'chatzot': 'Midday', 'minchaGedola': 'Mincha Gedola',
+                 'minchaKetana': 'Mincha Ketana', 'plagHaMincha': 'Plag HaMincha', 'sunset': 'Sunset',
+                 'dusk': 'Dusk', }, "fi"],
+    "hungarian": ["Nincs információ", "Nincs esemény", "Különleges szombat", "Nincs Omer gróf",
+                  {'chatzotNight': 'Midnight', 'alotHaShachar': 'Alot Ha Shachar',
+                   'misheyakir': ' Time for Talit and Tefilin',
+                   'misheyakirMachmir': 'Time for Talit and Tefilin - Strictness',
+                   'dawn': 'Dawn', 'sunrise': 'Sunrize', 'sofZmanShma': 'End Time Of Shma',
+                   'sofZmanTfilla': 'End Time Of Shaarit', 'chatzot': 'Midday', 'minchaGedola': 'Mincha Gedola',
+                   'minchaKetana': 'Mincha Ketana', 'plagHaMincha': 'Plag HaMincha', 'sunset': 'Sunset',
+                   'dusk': 'Dusk', }, "hu"],
+}
 
 SENSOR_TYPES = {
     "shabbat_in": ["כניסת השבת", "mdi:candle", "Shabbat entry"],
@@ -61,6 +113,7 @@ SENSOR_TYPES = {
     "event_name": ["אירוע", "mdi:book-open-variant", "Event Name"],
     "omer_day": ["ספירת העומר", "mdi:book-open-variant", "Omer Count Day"],
     "hebrew_date": ["תאריך עברי", "mdi:calendar", "Hebrew Date"],
+    "zmanim": ["זמני היום", "mdi:calendar", "Zmanim"],
 }
 
 HEBREW_WEEKDAY = {7: "יום ראשון, ",
