@@ -70,6 +70,7 @@ If you want to control the time off Havdala and time before entrace :
     - yomtov_name    # get yomtov name.
     - event_name     # get event name.
     - omer_day       # get omer name.
+    - zmnaim         # get zmanim for the current day
 ```
 
 ## Full configuration example
@@ -98,6 +99,7 @@ sensor:
       - yomtov_name
       - event_name
       - omer_day
+      - zmanim
 ```
 
   **Good Luck !**
