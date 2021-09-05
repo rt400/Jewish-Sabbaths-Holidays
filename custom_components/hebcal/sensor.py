@@ -178,6 +178,7 @@ class Hebcal(Entity):
         self.omer = False
         self.hanucka = False
         self.zmanim = {}
+        self.create_db_file()
 
     @property
     def name(self) -> str:
@@ -210,7 +211,12 @@ class Hebcal(Entity):
 
     async def async_update(self):
         """Update our sensor state"""
-        await self.update_db()
+        if not (pathlib.Path(self.config_path + "hebcal_data.json").is_file()):
+            await self.create_db_file()
+        elif not self.hebcal_db or self.file_time_stamp is None:
+            await self.create_db_file()
+        elif self.file_time_stamp != datetime.date.today() or len(self.hebcal_db) <= 2:
+            await self.create_db_file()
         type_to_func = {
             "shabbat_in": self.get_shabbat_time_in,
             "shabbat_out": self.get_shabbat_time_out,
@@ -311,12 +317,13 @@ class Hebcal(Entity):
                     is_in = datetime.datetime.strptime(
                         extract_data["date"], "%Y-%m-%dT%H:%M:%S"
                     )
-                    if is_in.isoweekday() == 5:
-                        self.shabbat_in = is_in
-                        self.temp_data.append(extract_data)
-                    elif is_in.isoweekday() != 6 and is_in.isoweekday() != 5:
-                        self.yomtov_in = is_in
-                        self.temp_data.append(extract_data)
+                    if self.check_candles_time(is_in):
+                        if is_in.isoweekday() == 5:
+                            self.shabbat_in = is_in
+                            self.temp_data.append(extract_data)
+                        elif is_in.isoweekday() != 6 and is_in.isoweekday() != 5:
+                            self.yomtov_in = is_in
+                            self.temp_data.append(extract_data)
                 if "havdalah" in list(extract_data.values()):
                     is_out = datetime.datetime.strptime(
                         extract_data["date"], "%Y-%m-%dT%H:%M:%S"
@@ -335,12 +342,12 @@ class Hebcal(Entity):
                         self.zmanim.update({LANGUAGE_DATA[self._language][4][x]: extract_data[x][11:16]})
                     self.zmanim.update({'title': 'day_zmanim'})
                     self.temp_data.append(self.zmanim)
-                    self.zmanim.pop('title')
+                    # self.zmanim.pop('title')
                 if any(
                         x in ["yomtov", "holiday", "omer", "roshchodesh"]
                         for x in list(extract_data.values())):
-                    extract_data["start"] = str(self.sunset_time(extract_data["date"], -1))[:19].replace(" ", "T")
-                    extract_data["end"] = str(self.sunset_time(extract_data["date"], 0))[:19].replace(" ", "T")
+                    extract_data["start"] = self.sunset_time(extract_data["date"], -1)
+                    extract_data["end"] = self.sunset_time(extract_data["date"], 0)
                     self.temp_data.append(extract_data)
             if self.shabbat_in and not self.shabbat_out:
                 self.shabbat_out = (
@@ -436,14 +443,11 @@ class Hebcal(Entity):
         temp["english"] = english_date
         return temp
 
-    async def update_db(self):
-        """Updates the db"""
-        if not (pathlib.Path(self.config_path + "hebcal_data.json").is_file()):
-            await self.create_db_file()
-        elif not self.hebcal_db or self.file_time_stamp is None:
-            await self.create_db_file()
-        elif self.file_time_stamp != datetime.date.today() or len(self.hebcal_db) <= 2:
-            await self.create_db_file()
+    @callback
+    def check_candles_time(self, candles):
+        sunset = datetime.datetime.strptime(self.sunset_time(str(candles)[:10], 0)
+                                             , "%Y-%m-%dT%H:%M:%S")
+        return sunset > candles
 
     @callback
     def sunset_time(self, date, day):
@@ -451,7 +455,7 @@ class Hebcal(Entity):
         data = get_astral_event_date(self.hass, event="sunset", date=date)
         sunset = self.utc_to_local(data, str(self._timezone))
         # _LOGGER.error(sunset)
-        return sunset
+        return str(sunset)[:19].replace(" ", "T")
 
     @callback
     def set_days(self):
@@ -624,7 +628,7 @@ class Hebcal(Entity):
             return day + ", " + self.hebcal_db[-1]["english"]
 
     async def get_zmanim(self):
-        return "זמני יום " + str(self.file_time_stamp)
+        return "זמנים הלכתיים עבור יום " + str(self.file_time_stamp)
 
     @classmethod
     def is_time_format(cls, input_time) -> str:
