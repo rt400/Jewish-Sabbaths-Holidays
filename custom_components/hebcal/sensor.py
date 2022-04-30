@@ -7,7 +7,7 @@ import json
 import logging
 import pathlib
 import time
-
+import re
 import aiohttp
 import homeassistant.helpers.config_validation as cv
 import pytz
@@ -568,8 +568,9 @@ class Hebcal(Entity):
                         extract_data["end"], "%Y-%m-%dT%H:%M:%S"
                     )
                     if start < today < end:
-                        omer = extract_data["hebrew"].replace("עומר ", "")
-                        result = OMER_DAYS[self._omer_count_type][int(omer)]
+                        omer = extract_data["hebrew"]
+                        omer = re.findall(r'\d+', omer)
+                        result = OMER_DAYS[self._omer_count_type][int(omer[0])]
                         self.omer = True
                     else:
                         self.omer = False
