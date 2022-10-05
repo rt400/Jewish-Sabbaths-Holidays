@@ -46,7 +46,7 @@ from .const import (
 
 _LOGGER = logging.getLogger(__name__)
 
-version = "2.0.4"
+version = "2.0.5"
 
 PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(
     {
@@ -463,7 +463,7 @@ class Hebcal(Entity):
         weekday = self.set_sunday(datetime.date.today().isoweekday())
         self.start = datetime.date.today() + datetime.timedelta(days=weekday)
         self.end = datetime.date.today() + datetime.timedelta(
-            days=weekday + 7)
+            days=weekday + 6)
 
     @classmethod
     def set_sunday(cls, day):
