@@ -50,6 +50,8 @@ If you want to control the time off Havdala and time before entrace :
 
 - **time_after_check**    # By defaule he get 10 Min , you can set minutes so the sensor can check if shabbat is ends..
 
+- **jerualem_candle**    # By defaule he get False , If set True the candle light will be like in Jerualem time(40 Mins)
+
 - **tzeit_hakochavim**    # By defaule set True , If set False the havdalah exit use calc
 
 - **omer_count_type**     # By defaule set to 0 ( 0 - Yeman , 1 - Eshkenaz/Sfard ) , set the nosah omer count day
@@ -84,6 +86,7 @@ sensor:
     havdalah_calc: 42
     time_before_check: 10
     time_after_check: 1
+    jerualem_candle: False
     tzeit_hakochavim: False
     omer_count_type: 0
     language: english
