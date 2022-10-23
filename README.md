@@ -50,7 +50,7 @@ If you want to control the time off Havdala and time before entrace :
 
 - **time_after_check**    # By defaule he get 10 Min , you can set minutes so the sensor can check if shabbat is ends..
 
-- **jerualem_candle**    # By defaule he get False , If set True the candle light will be like in Jerualem time(40 Mins)
+- **jerusalem_candle**    # By defaule he get False , If set True the candle light will be like in Jerualem time(40 Mins)
 
 - **tzeit_hakochavim**    # By defaule set True , If set False the havdalah exit use calc
 
