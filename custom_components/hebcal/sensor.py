@@ -26,11 +26,13 @@ from .const import (
     SENSOR_TYPES,
     TIME_AFTER_CHECK,
     TIME_BEFORE_CHECK,
+    JERUSALEM_CANDEL,
     TZEIT_HAKOCHAVIM,
     OMER_COUNT_TYPE,
     DEFAULT_HAVDALAH_MINUTES,
     DEFAULT_TIME_BEFORE_CHECK,
     DEFAULT_TIME_AFTER_CHECK,
+    DEFAULT_JERUSALEM_CANDEL,
     DEFAULT_TZEIT_HAKOCHAVIM,
     DEFAULT_OMER_COUNT_TYPE,
     OMER_DAYS,
@@ -46,7 +48,7 @@ from .const import (
 
 _LOGGER = logging.getLogger(__name__)
 
-version = "2.0.7"
+version = "2.0.8"
 
 PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(
     {
@@ -56,6 +58,7 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(
         vol.Optional(HAVDALAH_MINUTES, default=DEFAULT_HAVDALAH_MINUTES): cv.positive_int,
         vol.Optional(TIME_BEFORE_CHECK, default=DEFAULT_TIME_BEFORE_CHECK): cv.positive_int,
         vol.Optional(TIME_AFTER_CHECK, default=DEFAULT_TIME_AFTER_CHECK): cv.positive_int,
+        vol.Optional(JERUSALEM_CANDEL, default=DEFAULT_JERUSALEM_CANDEL): cv.boolean,
         vol.Optional(TZEIT_HAKOCHAVIM, default=DEFAULT_TZEIT_HAKOCHAVIM): cv.boolean,
         vol.Optional(OMER_COUNT_TYPE, default=DEFAULT_OMER_COUNT_TYPE): cv.positive_int,
         vol.Optional(LANGUAGE, default=DEFAULT_LANGUAGE): cv.string,
@@ -88,6 +91,7 @@ async def async_setup_platform(hass, config, async_add_entities, discovery_info=
     havdalah = config.get(HAVDALAH_MINUTES)
     time_before = config.get(TIME_BEFORE_CHECK)
     time_after = config.get(TIME_AFTER_CHECK)
+    jerusalem_candel = config.get(JERUSALEM_CANDEL)
     tzeit_hakochavim = config.get(TZEIT_HAKOCHAVIM)
     omer_count_type = config.get(OMER_COUNT_TYPE)
     language = config.get(LANGUAGE)
@@ -112,6 +116,7 @@ async def async_setup_platform(hass, config, async_add_entities, discovery_info=
                 havdalah,
                 time_before,
                 time_after,
+                jerusalem_candel,
                 tzeit_hakochavim,
                 omer_count_type,
                 language,
@@ -139,6 +144,7 @@ class Hebcal(Entity):
     start = None
     end = None
     config_path = None
+    candel = 18
 
     def __init__(
             self,
@@ -150,6 +156,7 @@ class Hebcal(Entity):
             havdalah,
             time_before,
             time_after,
+            jerusalem_candel,
             tzeit_hakochavim,
             omer_count_type,
             language,
@@ -168,6 +175,7 @@ class Hebcal(Entity):
         self._havdalah = havdalah
         self._time_before = time_before
         self._time_after = time_after
+        self._jerusalem_candel = jerusalem_candel
         self._tzeit_hakochavim = tzeit_hakochavim
         self._omer_count_type = omer_count_type
         self._language = language
@@ -240,14 +248,16 @@ class Hebcal(Entity):
         self.temp_data = []
         self.file_time_stamp = datetime.date.today()
         self.temp_data.append({"update_date": str(self.file_time_stamp)})
+        if self._jerusalem_candel :
+            self.candel = 40
         try:
             h_url = HEBCAL_DATE_URL.format(str(LANGUAGE_DATA[self._language][-1]), str(self.start), str(self.end),
                                            str(self._latitude), str(self._longitude),
-                                           str(self._timezone))
+                                           str(self._timezone), str(self.candel))
             if not self._tzeit_hakochavim:
                 h_url = HEBCAL_DATE_URL_HAVDALAH.format(str(LANGUAGE_DATA[self._language][-1]), str(self.start),
                                                         str(self.end), str(self._latitude),
-                                                        str(self._longitude), str(self._timezone), str(self._havdalah))
+                                                        str(self._longitude), str(self._timezone), str(self._havdalah), str(self.candel))
             async with aiohttp.ClientSession() as session:
                 html = await fetch(
                     session, h_url, )
