@@ -4,10 +4,10 @@ PLATFORM_FOLDER = "/custom_components/hebcal/"
 
 HEBCAL_DATE_URL_HAVDALAH = "https://www.hebcal.com/hebcal/?v=1&cfg=json&maj=on&min=on&nx=on&mf=on&ss=on&mod=on" \
                            "&s=on&c=on&o=on&i=on&geo=pos&lg={}&start={}&end={}&latitude={}&longitude={}" \
-                           "&tzid={}&m={}"
+                           "&tzid={}&m={}&b={}"
 
 HEBCAL_DATE_URL = "https://www.hebcal.com/hebcal/?v=1&cfg=json&maj=on&min=on&nx=on&mf=on&ss=on&mod=on&s=on&c=on" \
-                  "&o=on&i=on&geo=pos&lg={}&start={}&end={}&latitude={}&longitude={}&tzid={}"
+                  "&o=on&i=on&geo=pos&lg={}&start={}&end={}&latitude={}&longitude={}&tzid={}&b={}"
 
 HEBCAL_ZMANIM_URL = "https://www.hebcal.com/zmanim?cfg=json&geo=pos&latitude={}&longitude={}&tzid={}&date={}"
 
@@ -17,6 +17,7 @@ SENSOR_PREFIX = "Hebcal "
 HAVDALAH_MINUTES = "havdalah_calc"
 TIME_BEFORE_CHECK = "time_before_check"
 TIME_AFTER_CHECK = "time_after_check"
+JERUSALEM_CANDEL = "jerusalem_candel"
 TZEIT_HAKOCHAVIM = "tzeit_hakochavim"
 OMER_COUNT_TYPE = "omer_count_type"
 LANGUAGE = "language"
@@ -24,6 +25,7 @@ LANGUAGE = "language"
 DEFAULT_HAVDALAH_MINUTES = 42
 DEFAULT_TIME_BEFORE_CHECK = 10
 DEFAULT_TIME_AFTER_CHECK = 10
+DEFAULT_JERUSALEM_CANDEL = False
 DEFAULT_TZEIT_HAKOCHAVIM = True
 DEFAULT_OMER_COUNT_TYPE = 0
 DEFAULT_LANGUAGE = "hebrew"
@@ -38,7 +40,7 @@ LANGUAGE_DATA = {
                  'minchaKetana': 'Mincha Ketana', 'plagHaMincha': 'Plag HaMincha', 'sunset': 'Sunset',
                  'dusk': 'Dusk', }, "s"],
     "hebrew": ["אין מידע", "אין אירוע", "שבת מיוחדת", "אין ספירת העומר",
-               {'chatzotNight': 'חצות לילה', 'alotHaShachar': 'עלות השחר', 'misheyakir': ' זמן הנחת טלית ותפילין',
+               {'chatzotNight': 'חצות לילה', 'alotHaShachar': 'עלות השחר', 'misheyakir': 'זמן הנחת טלית ותפילין',
                 'misheyakirMachmir': 'זמן הנחת טלית ותפילין - מחמיר', 'dawn': 'שחר', 'sunrise': 'זריחה',
                 'sofZmanShma': 'סוף זמן קריאת שמע', 'sofZmanTfilla': 'סוף זמן תפילת שחרית', 'chatzot': 'חצות היום',
                 'minchaGedola': 'מנחה גדולה', 'minchaKetana': 'מנחה קטנה', 'plagHaMincha': 'פלג המנחה',
@@ -113,7 +115,7 @@ SENSOR_TYPES = {
     "event_name": ["אירוע", "mdi:book-open-variant", "Event Name"],
     "omer_day": ["ספירת העומר", "mdi:book-open-variant", "Omer Count Day"],
     "hebrew_date": ["תאריך עברי", "mdi:calendar", "Hebrew Date"],
-    "zmanim": ["זמני היום", "mdi:calendar", "Zmanim"],
+    "zmanim": ["זמנים הלכתיים", "mdi:calendar", "Zmanim"],
 }
 
 HEBREW_WEEKDAY = {7: "יום ראשון, ",
