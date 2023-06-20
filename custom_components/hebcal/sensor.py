@@ -48,7 +48,7 @@ from .const import (
 
 _LOGGER = logging.getLogger(__name__)
 
-version = "2.0.9"
+version = "2.0.8"
 
 PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(
     {
@@ -186,7 +186,7 @@ class Hebcal(Entity):
         self.omer = False
         self.hanucka = False
         self.zmanim = {}
-        self.create_db_file()
+        # await self.create_db_file()
 
     @property
     def name(self) -> str:
@@ -240,7 +240,7 @@ class Hebcal(Entity):
             "zmanim": self.get_zmanim,
         }
         self._state = await type_to_func[self.type]()
-        await self.async_update_ha_state()
+        self.async_write_ha_state()
 
     async def create_db_file(self):
         """Create a json db"""
