@@ -48,7 +48,7 @@ from .const import (
 
 _LOGGER = logging.getLogger(__name__)
 
-version = "2.0.8"
+version = "2.0.9"
 
 PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(
     {
