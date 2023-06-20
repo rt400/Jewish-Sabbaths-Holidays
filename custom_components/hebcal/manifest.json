@@ -1,10 +1,11 @@
 {
-  'codeowners': ['@yuval_mejahez'], 
-  'dependencies': [], 
-  'documentation': 'https://github.com/rt400/Jewish-Sabbaths-Holidays', 
-  'domain': 'hebcal', 
-  'iot_class': 'local_polling', 
-  'issue_tracker': 'https://github.com/rt400/Jewish-Sabbaths-Holidays/issues', 
-  'name': 'Jewish Sabbaths Holidays', 
-  'requirements': [], 'version': '2.1.0'
+  "codeowners": ["@yuval_mejahez"], 
+  "dependencies": [], 
+  "documentation": "https://github.com/rt400/Jewish-Sabbaths-Holidays", 
+  "domain": "hebcal", 
+  "iot_class": "local_polling", 
+  "issue_tracker": "https://github.com/rt400/Jewish-Sabbaths-Holidays/issues", 
+  "name": "Jewish Sabbaths Holidays", 
+  "requirements": [], 
+  "version": "2.1.0"
 }
