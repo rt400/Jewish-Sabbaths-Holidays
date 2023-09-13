@@ -48,7 +48,7 @@ from .const import (
 
 _LOGGER = logging.getLogger(__name__)
 
-version = "2.0.9"
+version = "2.2.0"
 
 PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(
     {
@@ -334,6 +334,8 @@ class Hebcal(Entity):
                         elif is_in.isoweekday() != 6 and is_in.isoweekday() != 5:
                             self.yomtov_in = is_in
                             self.temp_data.append(extract_data)
+                    elif is_in.isoweekday() == 6:
+                        special_holiday = True
                 if "havdalah" in list(extract_data.values()):
                     is_out = datetime.datetime.strptime(
                         extract_data["date"], "%Y-%m-%dT%H:%M:%S"
@@ -374,6 +376,20 @@ class Hebcal(Entity):
                         "title": "הבדלה - ידני",
                     }
                 )
+                if special_holiday:
+                    self.yomtov_in = (
+                            self.shabbat_in
+                            + datetime.timedelta(days=1)
+                    )
+                    self.temp_data.append(
+                        {
+                            "className": "candles",
+                            "hebrew": "הדלקת נרות",
+                            "date": str(self.yomtov_in).replace(" ", "T"),
+                            "allDay": False,
+                            "title": "הדלקת נרות - ידני",
+                        }
+                    )
             elif not self.shabbat_in and self.shabbat_out:
                 self.shabbat_in = (
                         self.shabbat_out
