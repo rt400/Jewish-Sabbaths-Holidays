@@ -48,7 +48,7 @@ from .const import (
 
 _LOGGER = logging.getLogger(__name__)
 
-version = "2.2.0"
+version = "2.0.8"
 
 PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(
     {
@@ -244,6 +244,11 @@ class Hebcal(Entity):
 
     async def create_db_file(self):
         """Create a json db"""
+        self.shabbat_in = None
+        self.shabbat_out = None
+        self.yomtov_in = None
+        self.yomtov_out = None
+        self.parashat = None
         self.set_days()
         self.temp_data = []
         self.file_time_stamp = datetime.date.today()
@@ -523,14 +528,18 @@ class Hebcal(Entity):
 
     async def get_yomtov_time_in(self):
         """Get Shabbat entrance time"""
-        if self.yomtov_in:
-            return self.is_time_format(str(self.yomtov_in)[11:16])
+        today = self.utc_to_local(datetime.datetime.utcnow(), str(self._timezone)).replace(tzinfo=None)
+        if self.yomtov_in and self.yomtov_out:
+            if self.yomtov_out.date() > today.date():
+                return self.is_time_format(str(self.yomtov_in)[11:16])
         return LANGUAGE_DATA[self._language][0]
 
     async def get_yomtov_time_out(self):
         """Get Shabbat exit time"""
-        if self.yomtov_out:
-            return self.is_time_format(str(self.yomtov_out)[11:16])
+        today = self.utc_to_local(datetime.datetime.utcnow(), str(self._timezone)).replace(tzinfo=None)
+        if self.yomtov_in and self.yomtov_out:
+            if self.yomtov_out.date() > today.date():
+                return self.is_time_format(str(self.yomtov_out)[11:16])
         return LANGUAGE_DATA[self._language][0]
 
     async def get_parasha(self) -> str:
@@ -539,6 +548,14 @@ class Hebcal(Entity):
         for extract_data in self.hebcal_db:
             if "shabbat" in list(extract_data.values()):
                 return self.parashat + " , " + extract_data["title"]
+        if self.parashat is None:
+            for extract_data in self.hebcal_db:
+                if "holiday" in list(extract_data.values()):
+                    start = datetime.datetime.strptime(
+                        extract_data["date"], "%Y-%m-%d"
+                    )
+                    if start.date() == self.shabbat_out.date():
+                        self.parashat = "חג " + extract_data["title"]
         return self.parashat if self.parashat is not None else result
 
     async def get_event_name(self) -> str:
@@ -637,10 +654,12 @@ class Hebcal(Entity):
             for extract_data in self.hebcal_db:
                 for x in extract_data.keys():
                     if x == "yomtov":
-                        result = HEBREW_WEEKDAY[datetime.datetime.strptime(
-                            extract_data["date"][:10], "%Y-%m-%d").date().isoweekday()]
-                        result = result + " " + extract_data["title"]
-                        return result
+                        today = self.utc_to_local(datetime.datetime.utcnow(), str(self._timezone)).replace(tzinfo=None)
+                        date = datetime.datetime.strptime(extract_data["date"][:10], "%Y-%m-%d").date()
+                        if date > today.date():
+                            result = HEBREW_WEEKDAY[date.isoweekday()]
+                            result = result + " " + extract_data["title"]
+                            return result
         except Exception as e:
             _LOGGER.error(str(e))
         return result
