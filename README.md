@@ -86,7 +86,7 @@ sensor:
     havdalah_calc: 42
     time_before_check: 10
     time_after_check: 1
-    jerualem_candle: False
+    jerusalem_candle: False
     tzeit_hakochavim: False
     omer_count_type: 0
     language: english
