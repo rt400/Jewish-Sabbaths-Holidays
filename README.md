@@ -1,35 +1,36 @@
 [![hacs_badge](https://img.shields.io/badge/HACS-Default-orange.svg?style=for-the-badge)](https://github.com/custom-components/hacs)
 # Jewish Sabbaths and Holidays Times integration for Home-Assistant
 
-The `Jewish-Sabbaths-Holidays` platform uses [HebCal API](https://www.hebcal.com/) to Receive Shabbat and holiday entry times, as well as the Hebrew date and Jewish holiday names.
+The `Jewish-Sabbaths-Holidays` platform uses the [HebCal API](https://www.hebcal.com/) to receive Shabbat times and the times of Jewish holidays, as well as the Hebrew date and the names of Jewish holidays (chagim).
 
 ## Installation
 
-First download all files in folder <https://github.com/rt400/Jewish-Sabbaths-Holidays/tree/master/custom_components/hebcal>.
-Now you need to create folder "hebcal" in your HomeAssistant config/custom_components folder and copy all files that you already download.
+To install the integration, first download all the files in this folder: <https://github.com/rt400/Jewish-Sabbaths-Holidays/tree/master/custom_components/hebcal>.
 
-The sensor need latitude and longitude and timezone so he got it from HomeAssitant config,
-   so you need to besure that you put them in configuration.yaml.
+Then create a folder called `hebcal` in your HomeAssistant `config/custom_components` folder and copy all files that you already download.
 
-   also need the TimeZone
-   see link : <https://www.home-assistant.io/blog/2015/05/09/utc-time-zone-awareness/>
-   Example :
+In order to display the correct times, the sensor needs your geolocation. By default it receives this from the instance's `configuration.yaml`.
 
-   ```yaml
-      homeassistant:
-        latitude: 32.0667
-        longitude: 34.7667
-        time_zone: Asia/Jerusalem
-   ```
+You can configure your geolocation as follows:
 
------
+```YAML
+   homeassistant:
+     latitude: 32.0667
+     longitude: 34.7667
+     time_zone: Asia/Jerusalem
+```
+
+If you don't know your geocoordinates, you can find them [here](https://www.latlong.net/). 
+
+The sensor also requires [TimeZone](https://www.home-assistant.io/blog/2015/05/09/utc-time-zone-awareness/) to work.
 
 To install using [HACS (Home Assistant Community Store)](https://hacs.xyz/), add this repository to your HACS custom repositories and select type -> integration.
+
 When it shows up, click Install.
 
 ## Configuration
 
-To enable hebcal times , just add the following lines to your `configuration.yaml`:
+To enable `hebcal` times , just add the following lines to your `configuration.yaml`:
 
 ```yaml
 # Example configuration.yaml entry
@@ -42,23 +43,23 @@ sensor:
 
 ### Optional Configuration Variables
 
-If you want to control the time off Havdala and time before entrace :
+You can configure the time for havdala and the time for the entry of Shabbat by modifying the following parameters:
 
-- **havdalah_calc**       # By defaule he get 42 Min , you can set 50Min or 72Min for other methods
+- **havdalah_calc**       # By default this is set to 42 minutes. You can also configure this value to be 50 minutes, 70 minutes, 72 minutes, or some other value.
 
-- **time_before_check**   # By defaule he get 10 Min , you can set minutes so the sensor can check if is shabbat
+- **time_before_check**   #  By default this is set to 10 minutes. You can modify the value in minutes.
 
-- **time_after_check**    # By defaule he get 10 Min , you can set minutes so the sensor can check if shabbat is ends..
+- **time_after_check**    # By default this is set to 10 minutes. You can modify this value.
 
-- **jerusalem_candle**    # By defaule he get False , If set True the candle light will be like in Jerualem time(40 Mins)
+- **jerusalem_candle**    # By default this value is set to 'False'. To enable Jerusalem candle lighting time (40 minutes before Shabbat), change the value to 'True'. 
 
-- **tzeit_hakochavim**    # By defaule set True , If set False the havdalah exit use calc
+- **tzeit_hakochavim**    # By default this is set to 'True'. If it is set to false, the sensor uses the time set for havdala.
 
-- **omer_count_type**     # By defaule set to 0 ( 0 - Yeman , 1 - Eshkenaz/Sfard ) , set the nosah omer count day
+- **omer_count_type**     # By default this is set to 0. 1 configures the omer counting method to follow the Yemenite/Teimani tradition. 2 is Ashkenazi and Sephardic.
 
-- **language**            # By defaule set to hebrew ( english, hebrew, german, spanish, french, russian, polish, finnish, hungarian) , set the language
+- **language**            #  By default this is set to Hebrew. But you can choose to display values in one of the supported languages by specifying the language (the options are: English, Hebrew, German, Spanish, French, Russian, Polish, Finish, Russian, and Hungarian). 
 
-- **resources:**          # Mandatory - You need to select atleast one
+- **resources:**          # Mandatory - You need to select at least one resource for the integration to work correctly.
 
 ```yaml
     - shabbat_in     # get shabbat entrace
@@ -72,12 +73,12 @@ If you want to control the time off Havdala and time before entrace :
     - yomtov_name    # get yomtov name.
     - event_name     # get event name.
     - omer_day       # get omer name.
-    - zmnaim         # get zmanim for the current day
+    - zmanim       # get zmanim for the current day
 ```
 
 ## Full configuration example
 
-The configuration sample below shows how an entry can look like:
+The following sample configuration shows a configuration with all the resources loaded:
 
 ```yaml
 # Example configuration.yaml entry
