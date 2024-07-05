@@ -2,6 +2,7 @@
 Platform to get Hebcal Times And Hebcalh information for Home Assistant.
 """
 import codecs
+import aiofiles
 import datetime
 import json
 import logging
@@ -48,7 +49,7 @@ from .const import (
 
 _LOGGER = logging.getLogger(__name__)
 
-version = "2.0.8"
+version = "2.4.0"
 
 PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(
     {
@@ -253,7 +254,7 @@ class Hebcal(Entity):
         self.temp_data = []
         self.file_time_stamp = datetime.date.today()
         self.temp_data.append({"update_date": str(self.file_time_stamp)})
-        if self._jerusalem_candle :
+        if self._jerusalem_candle:
             self.candle = 40
         try:
             h_url = HEBCAL_DATE_URL.format(str(LANGUAGE_DATA[self._language][-1]), str(self.start), str(self.end),
@@ -262,7 +263,8 @@ class Hebcal(Entity):
             if not self._tzeit_hakochavim:
                 h_url = HEBCAL_DATE_URL_HAVDALAH.format(str(LANGUAGE_DATA[self._language][-1]), str(self.start),
                                                         str(self.end), str(self._latitude),
-                                                        str(self._longitude), str(self._timezone), str(self._havdalah), str(self.candle))
+                                                        str(self._longitude), str(self._timezone), str(self._havdalah),
+                                                        str(self.candle))
             async with aiohttp.ClientSession() as session:
                 html = await fetch(
                     session, h_url, )
@@ -273,19 +275,12 @@ class Hebcal(Entity):
                 zmanim_temp = json.loads(html)['times']
                 zmanim_temp.update({'title': 'day_zmanim'})
                 temp_db['items'].append(zmanim_temp)
-                with codecs.open(
+                async with aiofiles.open(
                         self.config_path + "hebcal_data_full.json", "w", encoding="utf-8"
                 ) as outfile:
-                    json.dump(
-                        temp_db,
-                        outfile,
-                        skipkeys=False,
-                        ensure_ascii=False,
-                        indent=4,
-                        separators=None,
-                        default=None,
-                        sort_keys=True,
-                    )
+                    temp_data = json.dumps(temp_db, skipkeys=False, ensure_ascii=False, indent=4, separators=None,
+                                           default=None, sort_keys=True)
+                    await outfile.write(temp_data)
                 await self.filter_db(temp_db["items"], "new")
             async with aiohttp.ClientSession() as session:
                 html = await fetch(
@@ -296,29 +291,23 @@ class Hebcal(Entity):
 
         except Exception as e:
             _LOGGER.error("Error while create DB: %s. Restore From Backup", str(e))
-            with open(
+            async with aiofiles.open(
                     self.config_path + "hebcal_data.json", encoding="utf-8"
             ) as data_file:
-                self.hebcal_db = json.loads(data_file.read())
+                temp_data_db = await data_file.read()
+                self.hebcal_db = json.loads(temp_data_db)
                 await self.filter_db(self.hebcal_db, "update")
             self.file_time_stamp = datetime.datetime.strptime(
                 self.hebcal_db[0]["update_date"], "%Y-%m-%d"
             ).date()
         if len(self.temp_data) > 2:
             self.hebcal_db = self.temp_data
-            with codecs.open(
+            async with aiofiles.open(
                     self.config_path + "hebcal_data.json", "w", encoding="utf-8"
             ) as outfile:
-                json.dump(
-                    self.hebcal_db,
-                    outfile,
-                    skipkeys=False,
-                    ensure_ascii=False,
-                    indent=4,
-                    separators=None,
-                    default=None,
-                    sort_keys=True,
-                )
+                temp_data = json.dumps(self.hebcal_db, skipkeys=False, ensure_ascii=False, indent=4, separators=None,
+                                       default=None, sort_keys=True)
+                await outfile.write(temp_data)
 
     async def filter_db(self, temp_db, state):
         """Filters the database"""
@@ -477,7 +466,7 @@ class Hebcal(Entity):
     @callback
     def check_candles_time(self, candles):
         sunset = datetime.datetime.strptime(self.sunset_time(str(candles)[:10], 0)
-                                             , "%Y-%m-%dT%H:%M:%S")
+                                            , "%Y-%m-%dT%H:%M:%S")
         return sunset > candles
 
     @callback
