@@ -49,7 +49,7 @@ from .const import (
 
 _LOGGER = logging.getLogger(__name__)
 
-version = "2.4.0"
+version = "2.5.0"
 
 PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(
     {
@@ -184,6 +184,8 @@ class Hebcal(Entity):
         self._state = None
         self.parashat = None
         self.yomtov_name = None
+        self.rosh_hashana = False
+        self.holiday_count = 0
         self.omer = False
         self.hanucka = False
         self.zmanim = {}
@@ -313,6 +315,8 @@ class Hebcal(Entity):
         """Filters the database"""
         if state == "new":
             for extract_data in temp_db:
+                if "major" in list(extract_data.values()):
+                    self.rosh_hashana = (True if any("Rosh Hashana" in str(value) for value in extract_data.values()) else False)
                 if "date" in extract_data:
                     extract_data["date"] = (
                         extract_data["date"][:19]
@@ -326,6 +330,7 @@ class Hebcal(Entity):
                             self.shabbat_in = is_in
                             self.temp_data.append(extract_data)
                         elif is_in.isoweekday() != 6 and is_in.isoweekday() != 5:
+                            self.holiday_count += 1
                             self.yomtov_in = is_in
                             self.temp_data.append(extract_data)
                     elif is_in.isoweekday() == 6:
@@ -400,11 +405,18 @@ class Hebcal(Entity):
                     }
                 )
             if self.yomtov_in and not self.yomtov_out:
-                self.yomtov_out = (
-                        self.yomtov_in
-                        + datetime.timedelta(days=1)
-                        + datetime.timedelta(minutes=60)
-                )
+                if self.rosh_hashana:
+                    self.yomtov_out = (
+                            self.yomtov_in
+                            + datetime.timedelta(days=2)
+                            + datetime.timedelta(minutes=60)
+                    )
+                else:
+                    self.yomtov_out = (
+                            self.yomtov_in
+                            + datetime.timedelta(days=1)
+                            + datetime.timedelta(minutes=60)
+                    )
                 self.temp_data.append(
                     {
                         "hebrew": "הבדלה - 42 דקות",
