@@ -13,6 +13,7 @@ import aiohttp
 import homeassistant.helpers.config_validation as cv
 import pytz
 import voluptuous as vol
+from aiozoneinfo import async_get_time_zone
 from homeassistant.components.sensor import ENTITY_ID_FORMAT
 from homeassistant.components.sensor import PLATFORM_SCHEMA
 from homeassistant.const import CONF_LATITUDE, CONF_LONGITUDE, CONF_TIME_ZONE, CONF_RESOURCES
@@ -49,7 +50,7 @@ from .const import (
 
 _LOGGER = logging.getLogger(__name__)
 
-version = "2.5.0"
+version = "2.5.1"
 
 PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(
     {
@@ -189,6 +190,7 @@ class Hebcal(Entity):
         self.omer = False
         self.hanucka = False
         self.zmanim = {}
+        self.local_timezone = None
         # await self.create_db_file()
 
     @property
@@ -256,6 +258,7 @@ class Hebcal(Entity):
         self.temp_data = []
         self.file_time_stamp = datetime.date.today()
         self.temp_data.append({"update_date": str(self.file_time_stamp)})
+        await self.set_local_timezone()
         if self._jerusalem_candle:
             self.candle = 40
         try:
@@ -313,10 +316,12 @@ class Hebcal(Entity):
 
     async def filter_db(self, temp_db, state):
         """Filters the database"""
+        special_holiday = False
         if state == "new":
             for extract_data in temp_db:
                 if "major" in list(extract_data.values()):
-                    self.rosh_hashana = (True if any("Rosh Hashana" in str(value) for value in extract_data.values()) else False)
+                    self.rosh_hashana = (
+                        True if any("Rosh Hashana" in str(value) for value in extract_data.values()) else False)
                 if "date" in extract_data:
                     extract_data["date"] = (
                         extract_data["date"][:19]
@@ -485,7 +490,7 @@ class Hebcal(Entity):
     def sunset_time(self, date, day):
         date = datetime.datetime.strptime(date[:10], '%Y-%m-%d').date() + datetime.timedelta(days=day)
         data = get_astral_event_date(self.hass, event="sunset", date=date)
-        sunset = self.utc_to_local(data, str(self._timezone))
+        sunset = self.utc_to_local(data, self.local_timezone)
         # _LOGGER.error(sunset)
         return str(sunset)[:19].replace(" ", "T")
 
@@ -512,8 +517,11 @@ class Hebcal(Entity):
         return switcher.get(day)
 
     @classmethod
-    def utc_to_local(cls, utc_dt, timezone):
-        return utc_dt.replace(tzinfo=datetime.timezone.utc).astimezone(tz=pytz.timezone(timezone))
+    def utc_to_local(cls, utc_dt, local_timezone):
+        return (utc_dt.replace(tzinfo=datetime.timezone.utc).astimezone(tz=local_timezone)).replace(tzinfo=None)
+
+    async def set_local_timezone(self):
+        self.local_timezone = await async_get_time_zone(str(self._timezone))
 
     async def get_shabbat_time_in(self):
         """Get Shabbat entrance time"""
@@ -529,7 +537,7 @@ class Hebcal(Entity):
 
     async def get_yomtov_time_in(self):
         """Get Shabbat entrance time"""
-        today = self.utc_to_local(datetime.datetime.utcnow(), str(self._timezone)).replace(tzinfo=None)
+        today = self.utc_to_local(datetime.datetime.utcnow(), self.local_timezone)
         if self.yomtov_in and self.yomtov_out:
             if self.yomtov_out.date() > today.date():
                 return self.is_time_format(str(self.yomtov_in)[11:16])
@@ -537,7 +545,7 @@ class Hebcal(Entity):
 
     async def get_yomtov_time_out(self):
         """Get Shabbat exit time"""
-        today = self.utc_to_local(datetime.datetime.utcnow(), str(self._timezone)).replace(tzinfo=None)
+        today = self.utc_to_local(datetime.datetime.utcnow(), self.local_timezone)
         if self.yomtov_in and self.yomtov_out:
             if self.yomtov_out.date() > today.date():
                 return self.is_time_format(str(self.yomtov_out)[11:16])
@@ -565,7 +573,7 @@ class Hebcal(Entity):
             result = HEBREW_WEEKDAY[datetime.datetime.today().isoweekday()]
         else:
             result = str(datetime.date.today().strftime("%A")) + ","
-        today = self.utc_to_local(datetime.datetime.utcnow(), str(self._timezone)).replace(tzinfo=None)
+        today = self.utc_to_local(datetime.datetime.utcnow(), self.local_timezone)
         holiday = None
         roshchodesh = None
         try:
@@ -601,7 +609,7 @@ class Hebcal(Entity):
     async def get_omer_day(self) -> str:
         """Get event name."""
         result = LANGUAGE_DATA[self._language][3]
-        today = self.utc_to_local(datetime.datetime.utcnow(), str(self._timezone)).replace(tzinfo=None)
+        today = self.utc_to_local(datetime.datetime.utcnow(), self.local_timezone)
         try:
             for extract_data in self.hebcal_db:
                 if "omer" in list(extract_data.values()):
@@ -624,7 +632,7 @@ class Hebcal(Entity):
 
     async def is_shabbat(self) -> str:
         """Check if it is Shabbat now"""
-        today = self.utc_to_local(datetime.datetime.utcnow(), str(self._timezone)).replace(tzinfo=None)
+        today = self.utc_to_local(datetime.datetime.utcnow(), self.local_timezone)
         if self.shabbat_in is not None and self.shabbat_out is not None:
             is_in = self.shabbat_in - datetime.timedelta(minutes=int(self._time_before))
             is_out = self.shabbat_out + datetime.timedelta(
@@ -637,7 +645,7 @@ class Hebcal(Entity):
 
     async def is_yomtov(self) -> str:
         """Check if it is yomtov now"""
-        today = self.utc_to_local(datetime.datetime.utcnow(), str(self._timezone)).replace(tzinfo=None)
+        today = self.utc_to_local(datetime.datetime.utcnow(), self.local_timezone)
         if self.yomtov_in is not None and self.yomtov_out is not None:
             is_in = self.yomtov_in - datetime.timedelta(minutes=int(self._time_before))
             is_out = self.yomtov_out + datetime.timedelta(
@@ -655,7 +663,7 @@ class Hebcal(Entity):
             for extract_data in self.hebcal_db:
                 for x in extract_data.keys():
                     if x == "yomtov":
-                        today = self.utc_to_local(datetime.datetime.utcnow(), str(self._timezone)).replace(tzinfo=None)
+                        today = self.utc_to_local(datetime.datetime.utcnow(), self.local_timezone)
                         date = datetime.datetime.strptime(extract_data["date"][:10], "%Y-%m-%d").date()
                         if date > today.date():
                             result = HEBREW_WEEKDAY[date.isoweekday()]
