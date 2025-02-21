@@ -29,16 +29,15 @@ DEFAULT_JERUSALEM_CANDLE = False
 DEFAULT_TZEIT_HAKOCHAVIM = True
 DEFAULT_OMER_COUNT_TYPE = 0
 DEFAULT_LANGUAGE = "hebrew"
-
 LANGUAGE_DATA = {
     "english": ["No Info", "No Event", "Special Shabbat", "No Omer Count",
-                {'chatzotNight': 'Midnight', 'alotHaShachar': 'Alot Ha Shachar',
-                 'misheyakir': ' Time for Talit and Tefilin',
-                 'misheyakirMachmir': 'Time for Talit and Tefilin - Strictness',
-                 'dawn': 'Dawn', 'sunrise': 'Sunrize', 'sofZmanShma': 'End Time Of Shma',
-                 'sofZmanTfilla': 'End Time Of Shaarit', 'chatzot': 'Midday', 'minchaGedola': 'Mincha Gedola',
-                 'minchaKetana': 'Mincha Ketana', 'plagHaMincha': 'Plag HaMincha', 'sunset': 'Sunset',
-                 'dusk': 'Dusk', }, "s"],
+                {'chatzotNight': "Midnight", 'alotHaShachar': "Alot HaShachar",
+                 'misheyakir': "Earliest Time For Talit And Tefilin",
+                 'misheyakirMachmir': "Earliest Time For Talit And Tefilin (Strict)",
+                 'dawn': "Dawn", 'sunrise': "Sunrise", 'sofZmanShma': "Latest Shema",
+                 'sofZmanTfilla': "Latest Shaharit", 'chatzot': "Midday", 'minchaGedola': "Mincha Gedola",
+                 'minchaKetana': "Mincha Ketana", 'plagHaMincha': "Plag HaMincha", 'sunset': "Sunset",
+                 'dusk': "Dusk", }, "s"],
     "hebrew": ["אין מידע", "אין אירוע", "שבת מיוחדת", "אין ספירת העומר",
                {'chatzotNight': 'חצות לילה', 'alotHaShachar': 'עלות השחר', 'misheyakir': 'זמן הנחת טלית ותפילין',
                 'misheyakirMachmir': 'זמן הנחת טלית ותפילין - מחמיר', 'dawn': 'שחר', 'sunrise': 'זריחה',
