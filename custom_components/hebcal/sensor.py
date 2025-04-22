@@ -30,12 +30,14 @@ from .const import (
     TIME_BEFORE_CHECK,
     JERUSALEM_CANDLE,
     TZEIT_HAKOCHAVIM,
+    USE_12H_TIME,
     OMER_COUNT_TYPE,
     DEFAULT_HAVDALAH_MINUTES,
     DEFAULT_TIME_BEFORE_CHECK,
     DEFAULT_TIME_AFTER_CHECK,
     DEFAULT_JERUSALEM_CANDLE,
     DEFAULT_TZEIT_HAKOCHAVIM,
+    DEFAULT_USE_12H_TIME,
     DEFAULT_OMER_COUNT_TYPE,
     OMER_DAYS,
     HEBREW_WEEKDAY,
@@ -50,7 +52,7 @@ from .const import (
 
 _LOGGER = logging.getLogger(__name__)
 
-version = "2.5.1"
+version = "2.6.0"
 
 PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(
     {
@@ -62,6 +64,7 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(
         vol.Optional(TIME_AFTER_CHECK, default=DEFAULT_TIME_AFTER_CHECK): cv.positive_int,
         vol.Optional(JERUSALEM_CANDLE, default=DEFAULT_JERUSALEM_CANDLE): cv.boolean,
         vol.Optional(TZEIT_HAKOCHAVIM, default=DEFAULT_TZEIT_HAKOCHAVIM): cv.boolean,
+        vol.Optional(USE_12H_TIME, default=DEFAULT_USE_12H_TIME): cv.boolean,
         vol.Optional(OMER_COUNT_TYPE, default=DEFAULT_OMER_COUNT_TYPE): cv.positive_int,
         vol.Optional(LANGUAGE, default=DEFAULT_LANGUAGE): cv.string,
         vol.Optional(
@@ -95,6 +98,7 @@ async def async_setup_platform(hass, config, async_add_entities, discovery_info=
     time_after = config.get(TIME_AFTER_CHECK)
     jerusalem_candle = config.get(JERUSALEM_CANDLE)
     tzeit_hakochavim = config.get(TZEIT_HAKOCHAVIM)
+    use_12h_time = config.get(USE_12H_TIME)
     omer_count_type = config.get(OMER_COUNT_TYPE)
     language = config.get(LANGUAGE)
 
@@ -120,11 +124,11 @@ async def async_setup_platform(hass, config, async_add_entities, discovery_info=
                 time_after,
                 jerusalem_candle,
                 tzeit_hakochavim,
+                use_12h_time,
                 omer_count_type,
                 language,
             )
         )
-
     async_add_entities(entities, False)
 
 
@@ -160,6 +164,7 @@ class Hebcal(Entity):
             time_after,
             jerusalem_candle,
             tzeit_hakochavim,
+            use_12h_time,
             omer_count_type,
             language,
 
@@ -179,6 +184,7 @@ class Hebcal(Entity):
         self._time_after = time_after
         self._jerusalem_candle = jerusalem_candle
         self._tzeit_hakochavim = tzeit_hakochavim
+        self.use_12h_time = use_12h_time
         self._omer_count_type = omer_count_type
         self._language = language
         self.config_path = hass.config.path() + PLATFORM_FOLDER
@@ -355,7 +361,12 @@ class Hebcal(Entity):
                     self.temp_data.append(extract_data)
                 if "day_zmanim" in list(extract_data.values()):
                     for x in LANGUAGE_DATA[self._language][4]:
-                        self.zmanim.update({LANGUAGE_DATA[self._language][4][x]: extract_data[x][11:16]})
+                        if self.use_12h_time:
+                            temp_time = datetime.datetime.strptime(extract_data[x][11:16], "%H:%M")
+                            temp_time = temp_time.strftime("%I:%M %p")
+                            self.zmanim.update({LANGUAGE_DATA[self._language][4][x]: str(temp_time)})
+                        else:
+                            self.zmanim.update({LANGUAGE_DATA[self._language][4][x]: extract_data[x][11:16]})
                     self.zmanim.update({'title': 'day_zmanim'})
                     self.temp_data.append(self.zmanim)
                     # self.zmanim.pop('title')
@@ -526,29 +537,41 @@ class Hebcal(Entity):
     async def get_shabbat_time_in(self):
         """Get Shabbat entrance time"""
         if self.shabbat_in:
-            return self.is_time_format(str(self.shabbat_in)[11:16])
+            if self.use_12h_time:
+                temp_time = self.shabbat_in.strftime("%Y-%m-%dT%I:%M %p")
+                return self.is_time_format(str(temp_time)[11:], self.use_12h_time)
+            return self.is_time_format(str(self.shabbat_in)[11:16], self.use_12h_time)
         return LANGUAGE_DATA[self._language][0]
 
     async def get_shabbat_time_out(self):
         """Get Shabbat exit time"""
         if self.shabbat_out:
-            return self.is_time_format(str(self.shabbat_out)[11:16])
+            if self.use_12h_time:
+                temp_time = self.shabbat_out.strftime("%Y-%m-%dT%I:%M %p")
+                return self.is_time_format(str(temp_time)[11:], self.use_12h_time)
+            return self.is_time_format(str(self.shabbat_out)[11:16], self.use_12h_time)
         return LANGUAGE_DATA[self._language][0]
 
     async def get_yomtov_time_in(self):
         """Get Shabbat entrance time"""
         today = self.utc_to_local(datetime.datetime.utcnow(), self.local_timezone)
         if self.yomtov_in and self.yomtov_out:
-            if self.yomtov_out.date() > today.date():
-                return self.is_time_format(str(self.yomtov_in)[11:16])
+            if self.yomtov_out.date() >= today.date():
+                if self.use_12h_time:
+                    temp_time = self.yomtov_in.strftime("%Y-%m-%dT%I:%M %p")
+                    return self.is_time_format(str(temp_time)[11:], self.use_12h_time)
+                return self.is_time_format(str(self.yomtov_in)[11:16], self.use_12h_time)
         return LANGUAGE_DATA[self._language][0]
 
     async def get_yomtov_time_out(self):
         """Get Shabbat exit time"""
         today = self.utc_to_local(datetime.datetime.utcnow(), self.local_timezone)
         if self.yomtov_in and self.yomtov_out:
-            if self.yomtov_out.date() > today.date():
-                return self.is_time_format(str(self.yomtov_out)[11:16])
+            if self.yomtov_out.date() >= today.date():
+                if self.use_12h_time:
+                    temp_time = self.yomtov_out.strftime("%Y-%m-%dT%I:%M %p")
+                    return self.is_time_format(str(temp_time)[11:], self.use_12h_time)
+                return self.is_time_format(str(self.yomtov_out)[11:16], self.use_12h_time)
         return LANGUAGE_DATA[self._language][0]
 
     async def get_parasha(self) -> str:
@@ -665,7 +688,7 @@ class Hebcal(Entity):
                     if x == "yomtov":
                         today = self.utc_to_local(datetime.datetime.utcnow(), self.local_timezone)
                         date = datetime.datetime.strptime(extract_data["date"][:10], "%Y-%m-%d").date()
-                        if date > today.date():
+                        if date >= today.date():
                             result = HEBREW_WEEKDAY[date.isoweekday()]
                             result = result + " " + extract_data["title"]
                             return result
@@ -686,10 +709,14 @@ class Hebcal(Entity):
         return "זמנים הלכתיים עבור יום " + str(self.file_time_stamp)
 
     @classmethod
-    def is_time_format(cls, input_time) -> str:
+    def is_time_format(cls, input_time, use_12h_time) -> str:
         """Check if the time is correct"""
         try:
-            time.strptime(input_time, "%H:%M")
-            return input_time
+            if use_12h_time:
+                time.strptime(input_time, "%H:%M %p")
+                return input_time
+            else:
+                time.strptime(input_time, "%H:%M")
+                return input_time
         except ValueError:
             return "Error"
