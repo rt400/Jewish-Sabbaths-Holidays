@@ -21,6 +21,7 @@ JERUSALEM_CANDLE = "jerusalem_candle"
 TZEIT_HAKOCHAVIM = "tzeit_hakochavim"
 OMER_COUNT_TYPE = "omer_count_type"
 LANGUAGE = "language"
+USE_12H_TIME = "use_12h_time"
 
 DEFAULT_HAVDALAH_MINUTES = 42
 DEFAULT_TIME_BEFORE_CHECK = 10
@@ -28,15 +29,16 @@ DEFAULT_TIME_AFTER_CHECK = 10
 DEFAULT_JERUSALEM_CANDLE = False
 DEFAULT_TZEIT_HAKOCHAVIM = True
 DEFAULT_OMER_COUNT_TYPE = 0
+DEFAULT_USE_12H_TIME = False
 DEFAULT_LANGUAGE = "hebrew"
 
 LANGUAGE_DATA = {
     "english": ["No Info", "No Event", "Special Shabbat", "No Omer Count",
                 {'chatzotNight': 'Midnight', 'alotHaShachar': 'Alot Ha Shachar',
                  'misheyakir': ' Time for Talit and Tefilin',
-                 'misheyakirMachmir': 'Time for Talit and Tefilin (Strict / Machmir)',
-                 'dawn': 'Dawn', 'sunrise': 'Sunrise', 'sofZmanShma': 'End Time Of Shema',
-                 'sofZmanTfilla': 'End Time Of Shacharit', 'chatzot': 'Midday', 'minchaGedola': 'Mincha Gedola',
+                 'misheyakirMachmir': 'Time for Talit and Tefilin - Strictness',
+                 'dawn': 'Dawn', 'sunrise': 'Sunrize', 'sofZmanShma': 'End Time Of Shma',
+                 'sofZmanTfilla': 'End Time Of Shaarit', 'chatzot': 'Midday', 'minchaGedola': 'Mincha Gedola',
                  'minchaKetana': 'Mincha Ketana', 'plagHaMincha': 'Plag HaMincha', 'sunset': 'Sunset',
                  'dusk': 'Dusk', }, "s"],
     "hebrew": ["אין מידע", "אין אירוע", "שבת מיוחדת", "אין ספירת העומר",
@@ -104,13 +106,13 @@ LANGUAGE_DATA = {
 }
 
 SENSOR_TYPES = {
-    "shabbat_in": ["כניסת השבת", "mdi:candle", "Start of Shabbat"],
-    "shabbat_out": ["צאת השבת", "mdi:exit-to-app", "End of Shabbat"],
-    "is_shabbat": ["האם שבת", "mdi:candle", "Is it Shabbat?"],
-    "parasha": ["פרשת השבוע", "mdi:book-open-variant", "Parsha"],
+    "shabbat_in": ["כניסת השבת", "mdi:candle", "Shabbat entry"],
+    "shabbat_out": ["צאת השבת", "mdi:exit-to-app", "Shabbat came out"],
+    "is_shabbat": ["האם שבת", "mdi:candle", "Is Shabbat?"],
+    "parasha": ["פרשת השבוע", "mdi:book-open-variant", "Parasha"],
     "yomtov_in": ["כניסת יום טוב", "mdi:candle", "Yomtov entry"],
     "yomtov_out": ["צאת יום טוב", "mdi:exit-to-app", "Yomtov came out"],
-    "is_yomtov": ["האם יום טוב", "mdi:candle", "Is it Yom Tov?"],
+    "is_yomtov": ["האם יום טוב", "mdi:candle", "Is Yomtov?"],
     "yomtov_name": ["יום טוב", "mdi:book-open-variant", "Yomtov Name"],
     "event_name": ["אירוע", "mdi:book-open-variant", "Event Name"],
     "omer_day": ["ספירת העומר", "mdi:book-open-variant", "Omer Count Day"],
