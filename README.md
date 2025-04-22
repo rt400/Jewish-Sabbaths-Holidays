@@ -57,7 +57,9 @@ You can configure the time for havdala and the time for the entry of Shabbat by 
 
 - **omer_count_type**     # By default this is set to 0. 1 configures the omer counting method to follow the Yemenite/Teimani tradition. 2 is Ashkenazi and Sephardic.
 
-- **language**            #  By default this is set to Hebrew. But you can choose to display values in one of the supported languages by specifying the language (the options are: English, Hebrew, German, Spanish, French, Russian, Polish, Finish, Russian, and Hungarian). 
+- **language**            #  By default this is set to Hebrew. But you can choose to display values in one of the supported languages by specifying the language (the options are: English, Hebrew, German, Spanish, French, Russian, Polish, Finish, Russian, and Hungarian).
+
+-  **use_12h_time**            #  By default this is set to False. But you can choose to display time values in 12H instead 24H.
 
 - **resources:**          # Mandatory - You need to select at least one resource for the integration to work correctly.
 
@@ -87,8 +89,9 @@ sensor:
     havdalah_calc: 42
     time_before_check: 10
     time_after_check: 1
-    jerusalem_candle: False
-    tzeit_hakochavim: False
+    jerusalem_candle: false
+    tzeit_hakochavim: false
+    use_12h_time: false
     omer_count_type: 0
     language: english
     resources:
