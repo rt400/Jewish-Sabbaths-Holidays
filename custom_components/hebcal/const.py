@@ -3,11 +3,11 @@
 PLATFORM_FOLDER = "/custom_components/hebcal/"
 
 HEBCAL_DATE_URL_HAVDALAH = "https://www.hebcal.com/hebcal/?v=1&cfg=json&maj=on&min=on&nx=on&mf=on&ss=on&mod=on" \
-                           "&s=on&c=on&o=on&i=on&geo=pos&lg={}&start={}&end={}&latitude={}&longitude={}" \
-                           "&tzid={}&m={}&b={}"
+                           "&s=on&c=on&o=on&geo=pos&lg={}&start={}&end={}&latitude={}&longitude={}" \
+                           "&tzid={}&m={}&b={}&i={}"
 
 HEBCAL_DATE_URL = "https://www.hebcal.com/hebcal/?v=1&cfg=json&maj=on&min=on&nx=on&mf=on&ss=on&mod=on&s=on&c=on" \
-                  "&o=on&i=on&geo=pos&lg={}&start={}&end={}&latitude={}&longitude={}&tzid={}&b={}"
+                  "&o=on&geo=pos&lg={}&start={}&end={}&latitude={}&longitude={}&tzid={}&b={}&i={}"
 
 HEBCAL_ZMANIM_URL = "https://www.hebcal.com/zmanim?cfg=json&geo=pos&latitude={}&longitude={}&tzid={}&date={}"
 
@@ -19,6 +19,7 @@ TIME_BEFORE_CHECK = "time_before_check"
 TIME_AFTER_CHECK = "time_after_check"
 JERUSALEM_CANDLE = "jerusalem_candle"
 TZEIT_HAKOCHAVIM = "tzeit_hakochavim"
+ISRAEL_DIASPORA = "israel_diaspora"
 OMER_COUNT_TYPE = "omer_count_type"
 LANGUAGE = "language"
 USE_12H_TIME = "use_12h_time"
@@ -28,6 +29,7 @@ DEFAULT_TIME_BEFORE_CHECK = 10
 DEFAULT_TIME_AFTER_CHECK = 10
 DEFAULT_JERUSALEM_CANDLE = False
 DEFAULT_TZEIT_HAKOCHAVIM = True
+DEFAULT_ISRAEL_DIASPORA = True
 DEFAULT_OMER_COUNT_TYPE = 0
 DEFAULT_USE_12H_TIME = False
 DEFAULT_LANGUAGE = "hebrew"
