@@ -55,7 +55,7 @@ You can configure the time for havdala and the time for the entry of Shabbat by 
 
 - **tzeit_hakochavim**    # By default this is set to 'True'. If it is set to false, the sensor uses the time set for havdala.
 
-- **israel_diaspora**    # By default this is set to 'True' and use only Israel Diaspora only. If it is set to false, the sensor set time for diaspora and not for israel (עבור יהודי התפוצות שהחגים אצלהם כפולים)
+- **israel_diaspora**    # By default this is set to 'True' and use Israel Diaspora only. If it is set to false, the sensor set time for diaspora and not for israel (עבור יהודי התפוצות שהחגים אצלהם כפולים)
 
 - **omer_count_type**     # By default this is set to 0. 1 configures the omer counting method to follow the Yemenite/Teimani tradition. 2 is Ashkenazi and Sephardic.
 
