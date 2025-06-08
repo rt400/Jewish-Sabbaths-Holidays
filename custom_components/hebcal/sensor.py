@@ -30,6 +30,7 @@ from .const import (
     TIME_BEFORE_CHECK,
     JERUSALEM_CANDLE,
     TZEIT_HAKOCHAVIM,
+    ISRAEL_DIASPORA,
     USE_12H_TIME,
     OMER_COUNT_TYPE,
     DEFAULT_HAVDALAH_MINUTES,
@@ -37,6 +38,7 @@ from .const import (
     DEFAULT_TIME_AFTER_CHECK,
     DEFAULT_JERUSALEM_CANDLE,
     DEFAULT_TZEIT_HAKOCHAVIM,
+    DEFAULT_ISRAEL_DIASPORA,
     DEFAULT_USE_12H_TIME,
     DEFAULT_OMER_COUNT_TYPE,
     OMER_DAYS,
@@ -64,6 +66,7 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(
         vol.Optional(TIME_AFTER_CHECK, default=DEFAULT_TIME_AFTER_CHECK): cv.positive_int,
         vol.Optional(JERUSALEM_CANDLE, default=DEFAULT_JERUSALEM_CANDLE): cv.boolean,
         vol.Optional(TZEIT_HAKOCHAVIM, default=DEFAULT_TZEIT_HAKOCHAVIM): cv.boolean,
+        vol.Optional(ISRAEL_DIASPORA, default=DEFAULT_ISRAEL_DIASPORA): cv.boolean,
         vol.Optional(USE_12H_TIME, default=DEFAULT_USE_12H_TIME): cv.boolean,
         vol.Optional(OMER_COUNT_TYPE, default=DEFAULT_OMER_COUNT_TYPE): cv.positive_int,
         vol.Optional(LANGUAGE, default=DEFAULT_LANGUAGE): cv.string,
@@ -98,6 +101,7 @@ async def async_setup_platform(hass, config, async_add_entities, discovery_info=
     time_after = config.get(TIME_AFTER_CHECK)
     jerusalem_candle = config.get(JERUSALEM_CANDLE)
     tzeit_hakochavim = config.get(TZEIT_HAKOCHAVIM)
+    israel_diaspora = config.get(ISRAEL_DIASPORA)
     use_12h_time = config.get(USE_12H_TIME)
     omer_count_type = config.get(OMER_COUNT_TYPE)
     language = config.get(LANGUAGE)
@@ -124,6 +128,7 @@ async def async_setup_platform(hass, config, async_add_entities, discovery_info=
                 time_after,
                 jerusalem_candle,
                 tzeit_hakochavim,
+                israel_diaspora,
                 use_12h_time,
                 omer_count_type,
                 language,
@@ -164,6 +169,7 @@ class Hebcal(Entity):
             time_after,
             jerusalem_candle,
             tzeit_hakochavim,
+            israel_diaspora,
             use_12h_time,
             omer_count_type,
             language,
@@ -184,6 +190,7 @@ class Hebcal(Entity):
         self._time_after = time_after
         self._jerusalem_candle = jerusalem_candle
         self._tzeit_hakochavim = tzeit_hakochavim
+        self._israel_diaspora = israel_diaspora
         self.use_12h_time = use_12h_time
         self._omer_count_type = omer_count_type
         self._language = language
@@ -264,18 +271,21 @@ class Hebcal(Entity):
         self.temp_data = []
         self.file_time_stamp = datetime.date.today()
         self.temp_data.append({"update_date": str(self.file_time_stamp)})
+        diaspora = "off"
         await self.set_local_timezone()
         if self._jerusalem_candle:
             self.candle = 40
+        if self._israel_diaspora:
+            diaspora = "on"
         try:
             h_url = HEBCAL_DATE_URL.format(str(LANGUAGE_DATA[self._language][-1]), str(self.start), str(self.end),
                                            str(self._latitude), str(self._longitude),
-                                           str(self._timezone), str(self.candle))
+                                           str(self._timezone), str(self.candle),str(diaspora))
             if not self._tzeit_hakochavim:
                 h_url = HEBCAL_DATE_URL_HAVDALAH.format(str(LANGUAGE_DATA[self._language][-1]), str(self.start),
                                                         str(self.end), str(self._latitude),
                                                         str(self._longitude), str(self._timezone), str(self._havdalah),
-                                                        str(self.candle))
+                                                        str(self.candle),str(diaspora))
             async with aiohttp.ClientSession() as session:
                 html = await fetch(
                     session, h_url, )
